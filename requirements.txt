@@ -1,0 +1,24 @@
+# GoldSignalBot V1 – Python Dependencies
+# Install with: pip install -r requirements.txt
+
+# Core data & math
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Technical indicators (EMA, RSI, ATR, etc.)
+pandas_ta>=0.3.14b
+
+# HTTP requests (API calls)
+requests>=2.31.0
+
+# Environment variable management (.env support)
+python-dotenv>=1.0.0
+
+# Market data fallback (yfinance for GC=F historical data)
+yfinance>=0.2.36
+
+# Config file parsing (config.ini)
+# configparser is included in Python stdlib, no install needed
+
+# Optional: pretty console tables (signal display)
+tabulate>=0.9.0

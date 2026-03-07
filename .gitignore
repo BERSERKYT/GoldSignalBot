@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+ENV/
+*.log
+
+# Project specific
+.env
+data/*.csv
+!data/.gitkeep
+
+# Node / React
+node_modules/
+dashboard/node_modules/
+dashboard/dist/
+dashboard/.env.local
+dashboard/.env.development.local
+dashboard/.env.test.local
+dashboard/.env.production.local
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Internal
+.gemini/
+/tmp/

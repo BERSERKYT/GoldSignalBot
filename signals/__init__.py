@@ -1,0 +1,1 @@
+# GoldSignalBot – signals package

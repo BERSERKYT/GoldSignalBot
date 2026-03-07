@@ -1,0 +1,1 @@
+# GoldSignalBot – data package
