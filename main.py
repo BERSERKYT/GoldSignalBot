@@ -136,7 +136,12 @@ def main():
         except Exception as e:
             logger.error(f"Critical error in main loop: {e}", exc_info=True)
             
-        # 6. Sleep for next cycle
+        # 6. Check for Single Run mode (for GitHub Actions)
+        if os.getenv("SINGLE_RUN", "false").lower() == "true":
+            logger.info("✅ Single run complete. Exiting...")
+            break
+
+        # 7. Sleep for next cycle
         logger.info(f"Sleeping for {scan_interval_mins} minutes...")
         time.sleep(scan_interval_mins * 60)
 

@@ -51,6 +51,22 @@ If you prefer a standard server:
 
 ---
 
+## 4. 🌟 Zero-Cost Backend (GitHub Actions) - RECOMMENDED
+
+This is the best 100% free option for running the bot periodically.
+
+1. **Go to your GitHub Repo**: Click on the **Settings** tab.
+2. **Setup Secrets**: Go to **Secrets and variables** -> **Actions** -> **New repository secret**.
+3. **Add the following secrets**:
+   - `SUPABASE_URL`
+   - `SUPABASE_KEY`
+   - `FINNHUB_KEY`
+4. **Done!**: The bot will now run automatically every hour.
+   - You can see it running in the **Actions** tab.
+   - You can also click **"Run workflow"** inside the Actions tab to trigger a scan manually.
+
+---
+
 ## ✅ Post-Deployment Checklist
 - [ ] Dashboard is accessible via `.vercel.app` URL.
 - [ ] Active signals update in real-time on the live site.
