@@ -9,6 +9,7 @@ export default function Header() {
         price_change: 0
     });
     const [isSyncing, setIsSyncing] = useState(false);
+    const [showMobileMenu, setShowMobileMenu] = useState(false);
 
     useEffect(() => {
         const fetchSettings = async () => {
@@ -79,7 +80,7 @@ export default function Header() {
                         <h1 className="text-lg font-extrabold tracking-tight text-primary block sm:hidden">GSB</h1>
                     </div>
 
-                    {/* Bot Controller */}
+                    {/* Desktop Bot Controller */}
                     <div className="hidden lg:flex items-center gap-4 border-l border-slate-800 pl-8 ml-2 lowercase">
                         <div className="flex flex-col">
                             <span className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Timeframe</span>
@@ -113,33 +114,86 @@ export default function Header() {
                         {isSyncing && (
                             <div className="flex items-center gap-2 text-[9px] text-primary animate-pulse ml-4">
                                 <span className="material-symbols-outlined text-sm">sync</span>
-                                SYNCING BOT...
+                                SYNCING...
                             </div>
                         )}
                     </div>
                 </div>
 
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-4 md:gap-6">
                     <div className="flex flex-col items-end">
                         <div className="flex items-center gap-2">
                             <span className={`text-sm font-bold ${isPositive ? 'text-success' : 'text-danger'} group relative cursor-help`}>
                                 ${settings.current_price?.toLocaleString() || '0,000.00'}
                             </span>
-                            <span className={`text-[10px] ${isPositive ? 'bg-success/20 text-success' : 'bg-danger/20 text-danger'} px-1.5 py-0.5 rounded`}>
+                            <span className={`text-[10px] ${isPositive ? 'bg-success/20 text-success' : 'bg-danger/20 text-danger'} px-1.5 py-0.5 rounded sm:block hidden`}>
                                 {isPositive ? '+' : ''}{settings.price_change}%
                             </span>
                         </div>
-                        <span className="text-[10px] text-slate-500 uppercase tracking-widest font-medium">LIVE • {settings.active_timeframe} SCAN</span>
+                        <span className="text-[10px] text-slate-500 uppercase tracking-widest font-medium">LIVE • {settings.active_timeframe}</span>
                     </div>
 
-                    <div className="flex items-center gap-3 border-l border-slate-200 dark:border-slate-800 pl-6">
-                        <button className="relative p-2 text-slate-400 hover:text-white transition-colors">
-                            <span className="material-symbols-outlined">notifications</span>
+                    <div className="flex items-center gap-2 md:gap-3 border-l border-slate-200 dark:border-slate-800 pl-4 md:pl-6">
+                        {/* Mobile Settings Toggle */}
+                        <button 
+                            onClick={() => setShowMobileMenu(!showMobileMenu)}
+                            className={`lg:hidden p-1.5 rounded-lg transition-colors ${showMobileMenu ? 'bg-primary text-background-dark' : 'text-slate-400 hover:bg-slate-800'}`}
+                        >
+                            <span className="material-symbols-outlined text-xl">settings</span>
                         </button>
-                        <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-primary to-yellow-600 flex items-center justify-center text-background-dark font-bold text-xs ring-2 ring-primary/20">JD</div>
+                        
+                        <button className="relative p-1.5 text-slate-400 hover:text-white transition-colors sm:block hidden">
+                            <span className="material-symbols-outlined">notifications</span>
+                            <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-danger rounded-full border-2 border-background-dark"></div>
+                        </button>
+                        <div className="h-7 w-7 md:h-8 md:w-8 rounded-full bg-gradient-to-tr from-primary to-yellow-600 flex items-center justify-center text-background-dark font-bold text-[10px] md:text-xs ring-2 ring-primary/20 shrink-0">JD</div>
                     </div>
                 </div>
             </div>
+
+            {/* Mobile Settings Sub-menu */}
+            {showMobileMenu && (
+                <div className="lg:hidden bg-slate-900 border-b border-slate-800 p-4 flex flex-col gap-4 animate-in slide-in-from-top duration-300">
+                    <div className="flex items-center justify-between">
+                        <div className="flex flex-col flex-1">
+                            <span className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-1">Select Timeframe</span>
+                            <div className="flex gap-2">
+                                {['15m', '1h', '4h', '1d'].map(tf => (
+                                    <button 
+                                        key={tf}
+                                        onClick={() => updateSetting('active_timeframe', tf)}
+                                        className={`flex-1 py-2 rounded text-[10px] font-bold uppercase transition-all ${settings.active_timeframe === tf ? 'bg-primary text-background-dark' : 'bg-slate-800 text-slate-400'}`}
+                                    >
+                                        {tf}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col">
+                        <span className="text-[10px] text-slate-500 uppercase font-bold tracking-widest mb-1">Strategy Profile</span>
+                        <div className="grid grid-cols-3 gap-2">
+                            {['v1', 'v2', 'v3'].map(st => (
+                                <button 
+                                    key={st}
+                                    onClick={() => updateSetting('active_strategy', st)}
+                                    className={`py-2 rounded text-[10px] font-bold uppercase transition-all ${settings.active_strategy === st ? 'bg-primary text-background-dark' : 'bg-slate-800 text-slate-400'}`}
+                                >
+                                    {st.toUpperCase()}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {isSyncing && (
+                        <div className="flex items-center justify-center gap-2 text-[10px] text-primary animate-pulse py-1">
+                            <span className="material-symbols-outlined text-sm">sync</span>
+                            APPLYING RULES TO CLOUD...
+                        </div>
+                    )}
+                </div>
+            )}
         </header>
     );
 }
