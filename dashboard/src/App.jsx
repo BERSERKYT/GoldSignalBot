@@ -10,7 +10,7 @@ function App() {
     <div className="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
       <Header />
       
-      <main className="max-w-[1600px] mx-auto w-full p-6 flex flex-col gap-6 flex-1">
+      <main className="max-w-[1600px] mx-auto w-full p-4 md:p-6 flex flex-col gap-4 md:gap-6 flex-1">
         <div className="grid grid-cols-12 gap-6">
           
           {/* Main Content Area (Center-Left) */}

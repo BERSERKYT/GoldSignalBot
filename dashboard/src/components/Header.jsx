@@ -62,18 +62,25 @@ export default function Header() {
     };
 
     const isPositive = settings.price_change >= 0;
+    const isConfigError = !import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_URL.startsWith('https');
 
     return (
         <header className="border-b border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-card-dark/50 backdrop-blur-md sticky top-0 z-50">
-            <div className="max-w-[1600px] mx-auto px-6 h-16 flex items-center justify-between">
-                <div className="flex items-center gap-8">
-                    <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-primary text-3xl">toll</span>
-                        <h1 className="text-xl font-extrabold tracking-tight text-primary">GoldSignalBot</h1>
+            {isConfigError && (
+                <div className="bg-red-500 text-white text-[10px] py-1 px-4 text-center font-bold tracking-wider animate-pulse">
+                    ⚠️ CLOUD CONFIGURATION ERROR: CHECK VERCEL ENVIRONMENT VARIABLES
+                </div>
+            )}
+            <div className="max-w-[1600px] mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
+                <div className="flex items-center gap-4 md:gap-8 overflow-hidden">
+                    <div className="flex items-center gap-2 shrink-0">
+                        <span className="material-symbols-outlined text-primary text-2xl md:text-3xl">toll</span>
+                        <h1 className="text-lg md:text-xl font-extrabold tracking-tight text-primary truncate sm:block hidden">GoldSignalBot</h1>
+                        <h1 className="text-lg font-extrabold tracking-tight text-primary block sm:hidden">GSB</h1>
                     </div>
 
                     {/* Bot Controller */}
-                    <div className="hidden lg:flex items-center gap-4 border-l border-slate-800 pl-8 ml-2">
+                    <div className="hidden lg:flex items-center gap-4 border-l border-slate-800 pl-8 ml-2 lowercase">
                         <div className="flex flex-col">
                             <span className="text-[9px] text-slate-500 uppercase font-bold tracking-widest">Timeframe</span>
                             <select

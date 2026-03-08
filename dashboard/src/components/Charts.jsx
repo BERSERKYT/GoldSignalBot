@@ -52,18 +52,18 @@ export default function Charts() {
     }, []);
 
     return (
-        <div className="grid grid-cols-12 gap-6">
+        <div className="grid grid-cols-12 gap-4 md:gap-6">
             {/* Equity Curve */}
-            <div className="col-span-12 lg:col-span-8 bg-card-dark rounded-xl border border-slate-800 p-8 min-h-[400px] relative overflow-hidden">
-                <div className="flex justify-between items-start mb-8">
+            <div className="col-span-12 lg:col-span-8 bg-card-dark rounded-xl border border-slate-800 p-4 md:p-8 min-h-[300px] md:min-h-[400px] relative overflow-hidden">
+                <div className="flex justify-between items-start mb-6 md:mb-8">
                     <div>
-                        <h3 className="text-white font-bold text-lg mb-1">Equity Growth</h3>
-                        <p className="text-slate-500 text-sm">Real-time performance tracking</p>
+                        <h3 className="text-white font-bold text-base md:text-lg mb-1">Equity Growth</h3>
+                        <p className="text-slate-500 text-xs md:text-sm">Real-time performance tracking</p>
                     </div>
                 </div>
 
                 {stats.hasData ? (
-                    <div className="h-64 flex items-end gap-1 px-4">
+                    <div className="h-48 md:h-64 flex items-end gap-0.5 md:gap-1 px-2 md:px-4">
                         {stats.equityData.map((val, i) => {
                             // Normalize display height
                             const min = Math.min(0, ...stats.equityData);
@@ -74,20 +74,20 @@ export default function Charts() {
                             return (
                                 <div
                                     key={i}
-                                    className={`flex-1 rounded-t-sm transition-all cursor-crosshair group relative ${val >= 0 ? 'bg-gradient-to-t from-primary/5 to-primary/40' : 'bg-gradient-to-t from-danger/5 to-danger/40'}`}
-                                    style={{ height: `${height}%`, minHeight: '4px' }}
+                                    className={`flex-1 rounded-t-[1px] transition-all cursor-crosshair group relative ${val >= 0 ? 'bg-gradient-to-t from-primary/5 to-primary/40' : 'bg-gradient-to-t from-danger/5 to-danger/40'}`}
+                                    style={{ height: `${height}%`, minHeight: '3px' }}
                                 >
-                                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-[10px] text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap border border-slate-700">Accumulated RR: {val}</div>
+                                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-[10px] text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap border border-slate-700 z-10">Accumulated RR: {val}</div>
                                 </div>
                             );
                         })}
                         {/* Fill the rest with placeholders if few signals */}
                         {stats.equityData.length < 20 && [...Array(20 - stats.equityData.length)].map((_, i) => (
-                            <div key={i} className="flex-1 bg-slate-800/20 rounded-t-sm h-1" />
+                            <div key={i} className="flex-1 bg-slate-800/10 rounded-t-sm h-1" />
                         ))}
                     </div>
                 ) : (
-                    <div className="h-64 flex flex-col items-center justify-center border-2 border-dashed border-slate-800 rounded-xl">
+                    <div className="h-48 md:h-64 flex flex-col items-center justify-center border-2 border-dashed border-slate-800 rounded-xl">
                         <span className="material-symbols-outlined text-4xl text-slate-700 mb-2">monitoring</span>
                         <p className="text-slate-500 text-sm">Waiting for finalized trade outcomes...</p>
                     </div>
@@ -95,13 +95,13 @@ export default function Charts() {
             </div>
 
             {/* Win/Loss Distribution */}
-            <div className="col-span-12 lg:col-span-4 bg-card-dark rounded-xl border border-slate-800 p-8 flex flex-col">
-                <h3 className="text-white font-bold text-lg mb-1">Strategy Accuracy</h3>
-                <p className="text-slate-500 text-sm mb-8">Live Win/Loss Ratio</p>
+            <div className="col-span-12 lg:col-span-4 bg-card-dark rounded-xl border border-slate-800 p-6 md:p-8 flex flex-col">
+                <h3 className="text-white font-bold text-base md:text-lg mb-1">Strategy Accuracy</h3>
+                <p className="text-slate-500 text-xs md:text-sm mb-6 md:mb-8">Live Win/Loss Ratio</p>
 
-                <div className="flex-1 flex flex-col justify-center gap-8">
+                <div className="flex-1 flex flex-col justify-center gap-6 md:gap-8">
                     <div>
-                        <div className="flex justify-between text-xs font-bold uppercase tracking-wider mb-2">
+                        <div className="flex justify-between text-[10px] md:text-xs font-bold uppercase tracking-wider mb-2">
                             <span className="text-success">Successful Signals</span>
                             <span className="text-white">{stats.winRate}%</span>
                         </div>
@@ -110,7 +110,7 @@ export default function Charts() {
                         </div>
                     </div>
                     <div>
-                        <div className="flex justify-between text-xs font-bold uppercase tracking-wider mb-2">
+                        <div className="flex justify-between text-[10px] md:text-xs font-bold uppercase tracking-wider mb-2">
                             <span className="text-danger">Failed Signals</span>
                             <span className="text-white">{stats.lossRate}%</span>
                         </div>
@@ -120,11 +120,11 @@ export default function Charts() {
                     </div>
                 </div>
 
-                <div className="mt-8 p-4 rounded-lg bg-slate-900/50 border border-slate-800">
-                    <p className="text-[10px] text-slate-500 font-bold uppercase mb-1">Status</p>
+                <div className="mt-6 md:mt-8 p-3 md:p-4 rounded-lg bg-slate-900/50 border border-slate-800">
+                    <p className="text-[9px] md:text-[10px] text-slate-500 font-bold uppercase mb-1">Status</p>
                     <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-primary animate-ping"></div>
-                        <span className="text-xs text-white font-medium">Monitoring outcomes live</span>
+                        <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-primary animate-ping"></div>
+                        <span className="text-[10px] md:text-xs text-white font-medium">Monitoring outcomes live</span>
                     </div>
                 </div>
             </div>

@@ -53,33 +53,33 @@ export default function PerformanceMetrics() {
     }, []);
 
     return (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            <div className="bg-card-dark rounded-xl border border-slate-800 p-6 hover:border-primary/50 transition-colors">
-                <p className="text-[10px] text-slate-500 font-bold uppercase mb-2">Winrate</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+            <div className="bg-card-dark rounded-xl border border-slate-800 p-4 md:p-6 hover:border-primary/50 transition-colors">
+                <p className="text-[9px] md:text-[10px] text-slate-500 font-bold uppercase mb-1 md:mb-2">Winrate</p>
                 <div className="flex items-center justify-between">
-                    <span className="text-3xl font-bold">{stats.winRate}%</span>
-                    <span className="material-symbols-outlined text-success">verified</span>
+                    <span className="text-xl md:text-3xl font-bold">{stats.winRate}%</span>
+                    <span className="material-symbols-outlined text-success text-lg md:text-2xl">verified</span>
                 </div>
             </div>
-            <div className="bg-card-dark rounded-xl border border-slate-800 p-6 hover:border-primary/50 transition-colors">
-                <p className="text-[10px] text-slate-500 font-bold uppercase mb-2">Profit Factor</p>
+            <div className="bg-card-dark rounded-xl border border-slate-800 p-4 md:p-6 hover:border-primary/50 transition-colors">
+                <p className="text-[9px] md:text-[10px] text-slate-500 font-bold uppercase mb-1 md:mb-2">Profit Factor</p>
                 <div className="flex items-center justify-between">
-                    <span className="text-3xl font-bold">{stats.profitFactor}</span>
-                    <span className="material-symbols-outlined text-primary">trending_up</span>
+                    <span className="text-xl md:text-3xl font-bold">{stats.profitFactor}</span>
+                    <span className="material-symbols-outlined text-primary text-lg md:text-2xl">trending_up</span>
                 </div>
             </div>
-            <div className="bg-card-dark rounded-xl border border-slate-800 p-6 hover:border-primary/50 transition-colors">
-                <p className="text-[10px] text-slate-500 font-bold uppercase mb-2">Max Drawdown</p>
+            <div className="bg-card-dark rounded-xl border border-slate-800 p-4 md:p-6 hover:border-primary/50 transition-colors">
+                <p className="text-[9px] md:text-[10px] text-slate-500 font-bold uppercase mb-1 md:mb-2">Max Drawdown</p>
                 <div className="flex items-center justify-between">
-                    <span className={`text-3xl font-bold ${stats.drawdown < 0 ? 'text-warning' : ''}`}>{stats.drawdown}%</span>
-                    <span className="material-symbols-outlined text-warning">warning</span>
+                    <span className={`text-xl md:text-3xl font-bold ${stats.drawdown < 0 ? 'text-warning' : ''}`}>{stats.drawdown}%</span>
+                    <span className="material-symbols-outlined text-warning text-lg md:text-2xl">warning</span>
                 </div>
             </div>
-            <div className="bg-card-dark rounded-xl border border-slate-800 p-6 hover:border-primary/50 transition-colors">
-                <p className="text-[10px] text-slate-500 font-bold uppercase mb-2">Total Signals</p>
+            <div className="bg-card-dark rounded-xl border border-slate-800 p-4 md:p-6 hover:border-primary/50 transition-colors">
+                <p className="text-[9px] md:text-[10px] text-slate-500 font-bold uppercase mb-1 md:mb-2">Total Signals</p>
                 <div className="flex items-center justify-between">
-                    <span className="text-3xl font-bold">{stats.totalSignals}</span>
-                    <span className="material-symbols-outlined text-slate-500">grid_view</span>
+                    <span className="text-xl md:text-3xl font-bold">{stats.totalSignals}</span>
+                    <span className="material-symbols-outlined text-slate-500 text-lg md:text-2xl">grid_view</span>
                 </div>
             </div>
         </div>
