@@ -159,6 +159,11 @@ def main():
                             signal["broker_ticket"] = trade_res.get("orderId")
                             logger.info(f"💰 LIVE TRADE SENT! Ticket: {signal['broker_ticket']}")
 
+                        # 4.7 TELEGRAM NOTIFICATION (Option 1)
+                        from modules.notifier import TelegramNotifier
+                        notifier = TelegramNotifier()
+                        notifier.send_signal(signal)
+
                         # 5. Log & Output Signal
                         signal_logger.log_signal(signal, asset="XAU/USD")
                     else:
