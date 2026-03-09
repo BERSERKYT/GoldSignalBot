@@ -30,32 +30,43 @@ class V1Strategy(BaseStrategy):
     def __init__(self):
         super().__init__(name="V1_Trend_Volatility")
 
-    def generate_signal(self, df: pd.DataFrame, current_price: float = None) -> Optional[Dict[str, Any]]:
+    def generate_signal(self, df: pd.DataFrame, current_price: float = None, params: Dict[str, Any] = None) -> Optional[Dict[str, Any]]:
         if df is None or len(df) < 50:
             logger.warning("Not enough data to generate signal.")
             return None
             
+        # Strategy Parameters (Default vs Sharpened)
+        p = {
+            "rsi_buy": 50,
+            "rsi_sell": 50,
+            "rsi_healthy_buy_low": 55,
+            "rsi_healthy_buy_high": 70,
+            "rsi_healthy_sell_low": 30,
+            "rsi_healthy_sell_high": 45,
+            "atr_multiplier": 1.5,
+            "min_confidence": 3
+        }
+        if params:
+            p.update(params)
+
         required_cols = ['EMA_9', 'EMA_21', 'RSI_14', 'ATR_14', 'ATR_14_MA_20', 'close']
         for col in required_cols:
             if col not in df.columns:
                 logger.error(f"Missing indicator column: {col}. Run Indicators module first.")
                 return None
                 
-        # Get the two most recent finalized candles (or current if running intray-bar, but usually we evaluate closed bars)
+        # Get the two most recent finalized candles
         latest = df.iloc[-1]
         previous = df.iloc[-2]
         
         # Determine cross conditions
-        # Buy Cross: EMA9 previously below EMA21, but now above EMA21
         buy_cross = (previous['EMA_9'] <= previous['EMA_21']) and (latest['EMA_9'] > latest['EMA_21'])
-        
-        # Sell Cross: EMA9 previously above EMA21, but now below EMA21
         sell_cross = (previous['EMA_9'] >= previous['EMA_21']) and (latest['EMA_9'] < latest['EMA_21'])
         
         # Volatility condition
-        high_volatility = latest['ATR_14'] > latest['ATR_14_MA_20']
+        high_volatility = latest['ATR_14'] > (latest['ATR_14_MA_20'] * 0.95) # Slight buffer
         
-        # Entry price (use latest close if current_price not explicitly provided)
+        # Entry price
         entry = current_price if current_price else latest['close']
         
         direction = "WAIT"
@@ -66,38 +77,38 @@ class V1Strategy(BaseStrategy):
         emoji = ""
         
         # --- Evaluate BUY ---
-        if buy_cross and latest['RSI_14'] > 50 and high_volatility:
+        if buy_cross and latest['RSI_14'] > p["rsi_buy"] and high_volatility:
             direction = "BUY"
             
             # Confidence logic
-            if 55 <= latest['RSI_14'] <= 70:
+            if p["rsi_healthy_buy_low"] <= latest['RSI_14'] <= p["rsi_healthy_buy_high"]:
                 confidence = 5
                 reason = "Strong bullish EMA cross + ideal RSI healthy zone + high volatility"
             else:
-                confidence = 3
-                reason = "Bullish EMA cross + RSI > 50 + high volatility (RSI slightly tight/extreme)"
+                confidence = p["min_confidence"]
+                reason = f"Bullish EMA cross + RSI > {p['rsi_buy']} + high volatility"
             emoji = "🟢"
             
             # Risk Management
-            sl_distance = latest['ATR_14'] * 1.5
+            sl_distance = latest['ATR_14'] * p["atr_multiplier"]
             sl = entry - sl_distance
             tp = entry + (sl_distance * 3) # R:R 1:3
             
         # --- Evaluate SELL ---
-        elif sell_cross and latest['RSI_14'] < 50 and high_volatility:
+        elif sell_cross and latest['RSI_14'] < p["rsi_sell"] and high_volatility:
             direction = "SELL"
             
             # Confidence logic
-            if 30 <= latest['RSI_14'] <= 45:
+            if p["rsi_healthy_sell_low"] <= latest['RSI_14'] <= p["rsi_healthy_sell_high"]:
                 confidence = 5
                 reason = "Strong bearish EMA cross + ideal RSI healthy zone + high volatility"
             else:
-                confidence = 3
-                reason = "Bearish EMA cross + RSI < 50 + high volatility (RSI slightly tight/extreme)"
+                confidence = p["min_confidence"]
+                reason = f"Bearish EMA cross + RSI < {p['rsi_sell']} + high volatility"
             emoji = "🔴"
             
             # Risk Management
-            sl_distance = latest['ATR_14'] * 1.5
+            sl_distance = latest['ATR_14'] * p["atr_multiplier"]
             sl = entry + sl_distance
             tp = entry - (sl_distance * 3) # R:R 1:3
             

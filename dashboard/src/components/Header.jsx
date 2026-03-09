@@ -133,6 +133,17 @@ export default function Header() {
                         <span className="text-[10px] text-slate-500 uppercase tracking-widest font-medium">LIVE • {settings.active_timeframe}</span>
                     </div>
 
+                    {/* AI Adaptation Status */}
+                    <div className="hidden sm:flex flex-col items-center bg-slate-900/40 border border-slate-800 px-3 py-1.5 rounded-xl backdrop-blur-sm">
+                        <div className="flex items-center gap-2">
+                             <span className={`material-symbols-outlined text-sm ${settings.ai_status?.includes('Sharpening') ? 'animate-pulse text-primary' : 'text-slate-500'}`}>psychology</span>
+                             <span className="text-[9px] font-black text-slate-300 uppercase tracking-tighter">AI ADAPTATION</span>
+                        </div>
+                        <div className="text-[10px] font-bold text-primary truncate max-w-[120px]">
+                            {settings.ai_status || "Stable"}
+                        </div>
+                    </div>
+
                     <div className="flex items-center gap-2 md:gap-3 border-l border-slate-200 dark:border-slate-800 pl-4 md:pl-6">
                         {/* Mobile Settings Toggle */}
                         <button 

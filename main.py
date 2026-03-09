@@ -66,6 +66,9 @@ def main():
     news_filter = NewsFilter()
     signal_logger = SignalLogger()
     
+    from modules.learning_engine import LearningEngine
+    learning_engine = LearningEngine(supabase_client)
+    
     # Initial Configuration Defaults
     timeframe = os.getenv("TIMEFRAME", "4h")
     scan_interval_mins = int(os.getenv("SCAN_INTERVAL_MINS", "60"))
@@ -90,6 +93,13 @@ def main():
             
             # 0.5 Update Outcomes for PENDING signals
             sync_engine.analyze_outcomes()
+
+            # 🧠 0.7 AI SELF-LEARNING: Calculate Strategy Sharpening
+            # This looks at past performance and adjusts RSI/ATR/Confidence offsets
+            ai_adaptation = learning_engine.apply_learning({}) # Start with empty base to get sharpened offsets
+            sharpened_params = ai_adaptation["params"]
+            ai_status = ai_adaptation["status"]
+            logger.info(f"🧠 AI ADAPTATION: Status='{ai_status}' | Sharpening Applied.")
             
             # Select Strategy from Factory
             strategy = STRATEGIES.get(active_strategy_name, STRATEGIES["v1"])
@@ -104,26 +114,27 @@ def main():
             else:
                 logger.info(f"Successfully fetched {len(df)} candles.")
                 
-                # 1.5 Update Current Price in Supabase for Dashboard Header
+                # 1.5 Update Current Price & AI Status in Supabase for Dashboard
                 try:
                     current_price = float(df.iloc[-1]['close'])
                     prev_close = float(df.iloc[-2]['close'])
                     price_change_pct = ((current_price - prev_close) / prev_close) * 100
                     
-                    logger.info(f"📤 Updating Supabase: Price={current_price:.2f}, Change={price_change_pct:.2f}%")
+                    logger.info(f"📤 Updating Supabase: Price={current_price:.2f}, AI='{ai_status}'")
                     
                     res = supabase_client.table("settings").update({
                         "current_price": round(current_price, 2),
                         "price_change": round(price_change_pct, 2),
+                        "ai_status": ai_status,
                         "updated_at": datetime.utcnow().isoformat()
                     }).eq("id", 1).execute()
                     
                     if not res.data:
-                        logger.warning("Supabase update returned no data - check if ID 1 exists and is accessible.")
+                        logger.warning("Supabase update returned no data - check if ID 1 exists.")
                     else:
                         logger.info("✅ Supabase settings updated successfully.")
                 except Exception as e:
-                    logger.error(f"❌ Failed to update live price in Supabase: {e}")
+                    logger.error(f"❌ Failed to update Supabase metadata: {e}")
 
                 # 2. Add Indicators
                 df = Indicators.add_all_indicators(df)
@@ -132,9 +143,9 @@ def main():
                 if not news_filter.is_safe_to_trade():
                     logger.warning("News Filter active: Skipped signal generation this cycle.")
                 else:
-                    # 4. Run Strategy
+                    # 4. Run Strategy with AI Sharpened Params
                     curr_p = df.iloc[-1]['close'] if not df.empty else None
-                    signal = strategy.generate_signal(df, current_price=curr_p)
+                    signal = strategy.generate_signal(df, current_price=curr_p, params=sharpened_params)
                     
                     if signal:
                         # Add metadata for Supabase
