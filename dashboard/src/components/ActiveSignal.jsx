@@ -126,12 +126,19 @@ export default function ActiveSignal() {
                         <div className="absolute top-2 right-2 md:top-3 md:right-3 bg-primary/20 text-primary text-[9px] md:text-[10px] font-bold px-1.5 py-0.5 md:px-2 md:py-1 rounded">R:R 1:3</div>
                     </div>
                 </div>
-                <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 md:gap-6 p-4 md:p-6 rounded-xl bg-slate-900/80 border border-slate-800/50">
-                    <div className="flex items-start md:items-center gap-3 md:gap-4">
-                        <span className="material-symbols-outlined text-slate-400 shrink-0">analytics</span>
-                        <p className="text-xs md:text-sm text-slate-400 leading-relaxed lg:max-w-lg">
-                            <span className="text-slate-200 font-semibold italic">Analysis:</span> {activeSignal.reason} {activeSignal.emoji}
-                        </p>
+                <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-6 p-6 rounded-2xl bg-slate-900/60 border border-slate-800/50 backdrop-blur-sm">
+                    <div className="flex items-start gap-4">
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20">
+                            <span className="material-symbols-outlined text-primary text-xl">psychology</span>
+                        </div>
+                        <div className="space-y-1">
+                            <p className="text-[10px] font-black text-primary/70 uppercase tracking-widest flex items-center gap-2">
+                                Current Analysis <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                            </p>
+                            <p className="text-sm text-slate-300 leading-relaxed italic">
+                                "{activeSignal.reason || 'Confluence identified across EMA and RSI indicators.'}" {activeSignal.emoji}
+                            </p>
+                        </div>
                     </div>
 
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full lg:w-auto">

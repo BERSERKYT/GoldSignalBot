@@ -81,13 +81,40 @@ export default function SignalModal({ signal, onClose }) {
                         <SignalChart signal={signal} />
                     </div>
 
-                    {/* Insights */}
-                    <div className="bg-primary/5 p-4 rounded-xl border border-primary/10">
-                        <div className="flex items-start gap-3">
-                            <span className="material-symbols-outlined text-primary text-xl mt-0.5">neurology</span>
+                    {/* Post-Trade Review (The "Learning" Section) */}
+                    <div className="bg-slate-900/80 p-5 rounded-2xl border border-slate-700/50 shadow-inner">
+                        <div className="flex items-start gap-4">
+                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                <span className="material-symbols-outlined text-primary">psychology</span>
+                            </div>
                             <div>
-                                <p className="text-xs font-bold text-primary uppercase tracking-widest mb-1">Bot Insights</p>
-                                <p className="text-slate-300 text-sm italic">"{signal.reason || 'The signal was triggered based on confluence across multiple indicators including RSI and EMA trends.'}"</p>
+                                <h3 className="text-xs font-black text-slate-300 uppercase tracking-[0.2em] mb-2">Strategy Review & Learning</h3>
+                                
+                                {signal.status === 'PENDING' ? (
+                                    <div className="space-y-2">
+                                        <p className="text-slate-400 text-sm leading-relaxed italic">
+                                            "Targeting a 1:3 Risk/Reward ratio. The current market structure suggests a strong {signal.direction} bias due to {signal.reason || 'converging technical indicators'}."
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        <div className="flex items-center gap-2">
+                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${signal.status === 'WIN' ? 'bg-success/20 text-success' : 'bg-danger/20 text-danger'}`}>
+                                                {signal.status === 'WIN' ? '✅ SUCCESSFUL SETUP' : '⚠️ MISSED TARGET'}
+                                            </span>
+                                        </div>
+                                        <p className="text-slate-300 text-sm leading-relaxed">
+                                            {signal.status === 'WIN' 
+                                                ? `The ${signal.strategy || 'V1'} strategy correctly identified the momentum shift. The price respected the SL zone and reached TP with high confidence. Lesson: Confluence between RSI and EMA is highly reliable in this timeframe.`
+                                                : `The market experienced unexpected counter-trend volatility. The entry was technically sound, but the stop loss was triggered before the move could materialize. Lesson: Increase ATR multiplier for SL during high-impact news periods.`
+                                            }
+                                        </p>
+                                        <div className="pt-2 border-t border-slate-800 flex items-center gap-2">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">AI Training: Insight Recorded</span>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

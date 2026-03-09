@@ -15,47 +15,49 @@ export default function SignalChart({ signal }) {
             const isBuy = signal.direction === 'BUY';
             const isWin = signal.status === 'WIN';
 
-            // Generate organic price action using a random walk with momentum
-            const points = [];
-            let current = entry;
-            let momentum = 0;
+            // Generate Organic Price Action
             const steps = 60;
-            const signalIndex = 15; // Where the signal happens in the chart
+            const signalIndex = 15;
+            const walk = new Array(steps);
+            
+            // Lock signal point to entry
+            walk[signalIndex] = entry;
 
-            for (let i = 0; i < steps; i++) {
-                // Determine bias based on outcome
-                let bias = 0;
-                if (i > signalIndex) {
-                    const remaining = steps - i;
-                    if (isWin) {
-                        // Gently pull towards TP
-                        bias = (tp - current) / (remaining + 10);
-                    } else if (signal.status === 'LOSS') {
-                        // Gently pull towards SL
-                        bias = (sl - current) / (remaining + 10);
-                    } else {
-                        // PENDING: Add 'repelling' force from TP/SL to stay in bounds
-                        const distToTP = Math.abs(current - tp);
-                        const distToSL = Math.abs(current - sl);
-                        const threshold = entry * 0.002;
-                        
-                        if (distToTP < threshold) bias = isBuy ? -0.5 : 0.5;
-                        if (distToSL < threshold) bias = isBuy ? 0.5 : -0.5;
-                    }
-                } else {
-                    // Before signal: slight trend leading into the setup
-                    bias = isBuy ? (entry * -0.00005) : (entry * 0.00005);
-                }
-
-                // Add "Market Noise" and Momentum
-                const noise = (Math.random() - 0.5) * (entry * 0.0015);
-                momentum = (momentum * 0.7) + bias + noise;
-                current += momentum;
-                
-                points.push(current);
+            // 1. Walk Backwards for Context
+            let currBack = entry;
+            let momBack = 0;
+            for (let i = signalIndex - 1; i >= 0; i--) {
+                const bias = isBuy ? (entry * 0.0001) : (entry * -0.0001); // Slight trend leading in
+                const noise = (Math.random() - 0.5) * (entry * 0.001);
+                momBack = (momBack * 0.6) + bias + noise;
+                currBack -= momBack;
+                walk[i] = currBack;
             }
 
-            setChartData(points);
+            // 2. Walk Forwards for Trade Execution
+            let currFor = entry;
+            let momFor = 0;
+            for (let i = signalIndex + 1; i < steps; i++) {
+                let bias = 0;
+                const remaining = steps - i;
+                
+                if (isWin) {
+                    bias = (tp - currFor) / (remaining + 5);
+                } else if (signal.status === 'LOSS') {
+                    bias = (sl - currFor) / (remaining + 5);
+                } else {
+                    // PENDING: Sideways/Teasing
+                    const noiseBias = (Math.random() - 0.5) * (entry * 0.0005);
+                    bias = noiseBias;
+                }
+
+                const noise = (Math.random() - 0.5) * (entry * 0.0012);
+                momFor = (momFor * 0.7) + bias + noise;
+                currFor += momFor;
+                walk[i] = currFor;
+            }
+
+            setChartData(walk);
             setLoading(false);
         };
 
@@ -70,106 +72,98 @@ export default function SignalChart({ signal }) {
     const tp = float(signal.tp);
     const sl = float(signal.sl);
     const isBuy = signal.direction === 'BUY';
-    const signalIndex = 15; // Point where trade starts
+    const signalIndex = 15; 
+
+    // Unified Coordinate System: 400 width x 200 height
+    const width = 400;
+    const height = 200;
+    const padding = 40; // Side padding for labels
 
     // Bounds for the chart y-axis
     const allValues = [...chartData, entry, tp, sl];
-    const minVal = Math.min(...allValues) * 0.998;
-    const maxVal = Math.max(...allValues) * 1.002;
-    const range = maxVal - minVal;
+    const minVal = Math.min(...allValues);
+    const maxVal = Math.max(...allValues);
+    const range = (maxVal - minVal) || 1;
 
-    const getY = (val) => 100 - ((val - minVal) / (range || 1)) * 100;
-    const getX = (i) => (i / (chartData.length - 1)) * 100;
+    // Scaling helpers
+    const getY = (val) => {
+        const percent = (val - minVal) / range;
+        return (height - 40) - (percent * (height - 80)) + 20; // Internal vertical padding
+    };
+    const getX = (i) => (i / (chartData.length - 1)) * (width - (padding * 2)) + padding;
 
-    // Split data into Context (before) and Trade (after)
+    // Split data
     const contextPoints = chartData.slice(0, signalIndex + 1);
     const tradePoints = chartData.slice(signalIndex);
 
+    const colorClass = isBuy ? '#10b981' : '#ef4444'; // Green or Red
+
     return (
-        <div className="relative h-72 bg-slate-950/50 rounded-xl border border-slate-800 p-2 overflow-hidden shadow-2xl">
-            {/* SVG Layer */}
-            <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 w-full h-full p-6 overflow-visible">
-                {/* 1. Shaded Zones (TradingView Style) */}
+        <div className="relative bg-slate-950/50 rounded-xl border border-slate-800 p-1 overflow-hidden shadow-2xl">
+            <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto overflow-visible font-sans fill-current">
+                {/* 1. Shaded Opportunity Zones */}
                 <rect 
-                    x="0" y={isBuy ? getY(tp) : getY(entry)} 
-                    width="100" height={Math.abs(getY(tp) - getY(entry))} 
+                    x={padding} y={isBuy ? getY(tp) : getY(entry)} 
+                    width={width - padding*2} height={Math.abs(getY(tp) - getY(entry))} 
                     fill="rgba(16, 185, 129, 0.08)" 
                 />
                 <rect 
-                    x="0" y={isBuy ? getY(entry) : getY(sl)} 
-                    width="100" height={Math.abs(getY(entry) - getY(sl))} 
+                    x={padding} y={isBuy ? getY(entry) : getY(sl)} 
+                    width={width - padding*2} height={Math.abs(getY(entry) - getY(sl))} 
                     fill="rgba(239, 68, 68, 0.08)" 
                 />
 
                 {/* 2. Level Lines */}
-                <line x1="0" y1={getY(tp)} x2="100" y2={getY(tp)} stroke="rgba(16, 185, 129, 0.3)" strokeDasharray="1" strokeWidth="0.5" />
-                <line x1="0" y1={getY(sl)} x2="100" y2={getY(sl)} stroke="rgba(239, 68, 68, 0.3)" strokeDasharray="1" strokeWidth="0.5" />
-                <line x1="0" y1={getY(entry)} x2="100" y2={getY(entry)} stroke="rgba(148, 163, 184, 0.3)" strokeDasharray="2" strokeWidth="0.5" />
+                <line x1={padding} y1={getY(tp)} x2={width-padding} y2={getY(tp)} stroke="rgba(16, 185, 129, 0.4)" strokeDasharray="2" strokeWidth="1" />
+                <line x1={padding} y1={getY(sl)} x2={width-padding} y2={getY(sl)} stroke="rgba(239, 68, 68, 0.4)" strokeDasharray="2" strokeWidth="1" />
+                <line x1={padding} y1={getY(entry)} x2={width-padding} y2={getY(entry)} stroke="rgba(148, 163, 184, 0.4)" strokeDasharray="4" strokeWidth="1" />
 
-                {/* 3. Context Line (Dimmed) */}
+                {/* 3. Lines */}
                 <polyline
-                    fill="none"
-                    stroke="#475569"
-                    strokeWidth="1"
-                    opacity="0.5"
+                    fill="none" stroke="#475569" strokeWidth="1.5" opacity="0.6"
                     points={contextPoints.map((val, i) => `${getX(i)},${getY(val)}`).join(' ')}
                 />
-
-                {/* 4. Active Trade Line (Bright Gold) */}
                 <polyline
-                    fill="none"
-                    stroke="#fbbf24"
-                    strokeWidth="2"
-                    strokeLinecap="round"
+                    fill="none" stroke="#fbbf24" strokeWidth="2.5" strokeLinecap="round"
                     points={tradePoints.map((val, i) => `${getX(i + signalIndex)},${getY(val)}`).join(' ')}
                 />
                 
-                {/* 5. Signal Trigger Point */}
-                <circle cx={getX(signalIndex)} cy={getY(chartData[signalIndex])} r="1.5" fill="#fbbf24" stroke="#0f172a" strokeWidth="0.5" />
-            </svg>
-            
-            {/* Floating Labels */}
-            <div className="absolute left-6 right-6 top-0 bottom-0 pointer-events-none text-[9px] font-bold uppercase py-6">
+                {/* 4. Labels (Unified inside SVG) */}
                 {/* TP Label */}
-                <div style={{ top: `${getY(tp)}%` }} className="absolute right-0 -translate-y-1/2 flex flex-col items-end">
-                    <span className="text-success bg-success/10 px-2 py-0.5 rounded border border-success/20">TP: {tp}</span>
-                    <span className="text-[7px] text-success/50 mt-0.5">TARGET ZONE</span>
-                </div>
+                <g transform={`translate(${width - padding}, ${getY(tp)})`}>
+                    <rect x="2" y="-9" width="45" height="18" rx="3" fill="#10b981" fillOpacity="0.1" stroke="#10b981" strokeOpacity="0.3" />
+                    <text x="6" y="4" fontSize="8" fontWeight="900" fill="#10b981">TP: {tp}</text>
+                </g>
 
                 {/* SL Label */}
-                <div style={{ top: `${getY(sl)}%` }} className="absolute right-0 -translate-y-1/2 flex flex-col items-end">
-                    <span className="text-danger bg-danger/10 px-2 py-0.5 rounded border border-danger/20">SL: {sl}</span>
-                </div>
+                <g transform={`translate(${width - padding}, ${getY(sl)})`}>
+                    <rect x="2" y="-9" width="45" height="18" rx="3" fill="#ef4444" fillOpacity="0.1" stroke="#ef4444" strokeOpacity="0.3" />
+                    <text x="6" y="4" fontSize="8" fontWeight="900" fill="#ef4444">SL: {sl}</text>
+                </g>
 
                 {/* Entry Label */}
-                <div style={{ top: `${getY(entry)}%` }} className="absolute left-0 -translate-y-1/2 flex flex-col items-start">
-                    <span className="text-slate-300 bg-slate-800/90 px-2 py-0.5 rounded border border-slate-700 shadow-lg">ENTRY: {entry}</span>
-                </div>
-            </div>
+                <g transform={`translate(${padding - 50}, ${getY(entry)})`}>
+                    <rect x="0" y="-9" width="48" height="18" rx="3" fill="#1e293b" stroke="#475569" strokeWidth="0.5" />
+                    <text x="4" y="4" fontSize="7" fontWeight="900" fill="#cbd5e1">ENTRY: {entry}</text>
+                </g>
 
-            {/* Signal Direction Icon */}
-            <div 
-                className={`absolute w-8 h-8 rounded-full flex items-center justify-center text-white shadow-2xl border-4 border-slate-900 ${isBuy ? 'bg-success' : 'bg-danger'} animate-bounce-subtle`}
-                style={{ left: `${getX(signalIndex)}%`, top: `${getY(chartData[signalIndex])}%`, transform: 'translate(-50%, -50%)' }}
-            >
-                <span className="material-symbols-outlined text-xl">{isBuy ? 'stat_3' : 'stat_minus_3'}</span>
-            </div>
-            
-            {/* Legend Overlay */}
-            <div className="absolute top-4 left-4 flex gap-4 text-[7px] font-bold uppercase tracking-widest">
-                <div className="flex items-center gap-1.5 text-slate-500">
-                    <div className="w-2 h-0.5 bg-slate-600 opacity-50"></div>
-                    Pre-Signal Context
-                </div>
-                <div className="flex items-center gap-1.5 text-primary">
-                    <div className="w-2 h-0.5 bg-primary"></div>
-                    Trade Execution
-                </div>
-            </div>
+                {/* 5. Trigger Icon */}
+                <g transform={`translate(${getX(signalIndex)}, ${getY(chartData[signalIndex])})`}>
+                    <circle r="8" fill={colorClass} stroke="#0f172a" strokeWidth="2" />
+                    <text x="0" y="3" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold">{isBuy ? '▲' : '▼'}</text>
+                </g>
 
-            <div className="absolute bottom-4 right-6 text-[8px] text-slate-600 font-bold uppercase tracking-widest flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-slate-800 animate-pulse"></span>
-                Historical Simulation
+                {/* Header Legend */}
+                <text x="10" y="15" fontSize="7" fontWeight="bold" fill="#64748b" letterSpacing="1">VISUAL ANALYSIS</text>
+                <circle cx="10" cy="25" r="2" fill="#475569" />
+                <text x="15" y="27" fontSize="6" fill="#64748b">CONTEXT</text>
+                <circle cx="50" cy="25" r="2" fill="#fbbf24" />
+                <text x="55" y="27" fontSize="6" fill="#fbbf24">TRADE</text>
+            </svg>
+
+            <div className="absolute bottom-2 right-4 flex items-center gap-1">
+                <div className="w-1 h-1 rounded-full bg-slate-700 animate-pulse"></div>
+                <span className="text-[7px] text-slate-600 font-bold uppercase tracking-widest">Organic Simulation</span>
             </div>
         </div>
     );
