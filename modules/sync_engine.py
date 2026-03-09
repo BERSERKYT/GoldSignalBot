@@ -40,11 +40,12 @@ class SyncEngine:
             if entry_time.tzinfo is None:
                 entry_time = entry_time.tz_localize('UTC')
             else:
-                entry_time = entry_time.astimezone(pd.Timestamp.now(tz='UTC').tzinfo)
+                entry_time = entry_time.tz_convert('UTC')
 
             # Fetch data from entry time to now
             df = self.fetcher.fetch_ohlcv(symbol="XAU/USD", timeframe="1h", limit=500) 
             if df is None or df.empty:
+                logger.warning(f"No data returned for outcome check (Signal {signal['id']})")
                 return
 
             entry_price = float(signal['entry_price'])
@@ -58,12 +59,11 @@ class SyncEngine:
             else:
                 df.index = df.index.tz_convert('UTC')
             
-            
-            # Filter data after entry time
-            after_entry = df[df.index > entry_time]
+            # Filter data strictly AFTER entry time
+            after_entry = df[df.index >= entry_time]
             
             if after_entry.empty:
-                logger.info(f"⌛ Signal {signal['id']} is pending - no bars after entry time yet.")
+                logger.info(f"⌛ Signal {signal['id']} is pending - entry_time ({entry_time}) is after latest data ({df.index[-1]})")
                 return
 
             status = "PENDING"

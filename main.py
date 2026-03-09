@@ -101,17 +101,24 @@ def main():
                 
                 # 1.5 Update Current Price in Supabase for Dashboard Header
                 try:
-                    current_price = df.iloc[-1]['close']
-                    prev_close = df.iloc[-2]['close']
+                    current_price = float(df.iloc[-1]['close'])
+                    prev_close = float(df.iloc[-2]['close'])
                     price_change_pct = ((current_price - prev_close) / prev_close) * 100
                     
-                    supabase_client.table("settings").update({
-                        "current_price": round(float(current_price), 2),
-                        "price_change": round(float(price_change_pct), 2),
+                    logger.info(f"📤 Updating Supabase: Price={current_price:.2f}, Change={price_change_pct:.2f}%")
+                    
+                    res = supabase_client.table("settings").update({
+                        "current_price": round(current_price, 2),
+                        "price_change": round(price_change_pct, 2),
                         "updated_at": datetime.utcnow().isoformat()
                     }).eq("id", 1).execute()
+                    
+                    if not res.data:
+                        logger.warning("Supabase update returned no data - check if ID 1 exists and is accessible.")
+                    else:
+                        logger.info("✅ Supabase settings updated successfully.")
                 except Exception as e:
-                    logger.error(f"Failed to update live price in Supabase: {e}")
+                    logger.error(f"❌ Failed to update live price in Supabase: {e}")
 
                 # 2. Add Indicators
                 df = Indicators.add_all_indicators(df)

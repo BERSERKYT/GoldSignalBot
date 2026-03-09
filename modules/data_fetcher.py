@@ -55,12 +55,17 @@ class DataFetcher:
                 logger.warning(f"No data returned for {symbol_to_yf} ({interval}, {period})")
                 return pd.DataFrame()
                 
-            # Flatten columns robustly for yfinance 0.2.40+
+            # Flatten columns robustly for different yfinance versions
             if isinstance(df.columns, pd.MultiIndex):
-                # We want 'Close', 'Open', etc. Usually they are at Level 0.
+                # Handle MultiIndex by taking the first level (e.g., ('Close', 'GC=F') -> 'Close')
                 df.columns = [col[0].lower() for col in df.columns]
             else:
+                # Handle single Index
                 df.columns = [col.lower() for col in df.columns]
+            
+            # Additional safety: rename 'adj close' to 'close' if present and 'close' is missing
+            if 'adj close' in df.columns and 'close' not in df.columns:
+                df.rename(columns={'adj close': 'close'}, inplace=True)
             
             # Remove any duplicated columns if any
             df = df.loc[:, ~df.columns.duplicated()]
