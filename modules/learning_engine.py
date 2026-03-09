@@ -20,11 +20,10 @@ class LearningEngine:
         Returns a dictionary of 'adjustments' and a 'status' string for the UI.
         """
         try:
-            # Fetch last signals
             response = self.supabase.from_('signals') \
                 .select('status, direction, confidence') \
                 .neq('direction', 'WAIT') \
-                .order('created_at', { 'ascending': False }) \
+                .order('created_at', desc=True) \
                 .limit(self.lookback_period) \
                 .execute()
 
@@ -91,19 +90,23 @@ class LearningEngine:
         
         sharpened = current_strategy_params.copy()
         
+        # Helper to get base or default
+        def b(key): return sharpened.get(key, self.base_config.get(key, 0))
+
         # Apply RSI offsets
         if "rsi_oversold_offset" in offsets:
-            sharpened["rsi_oversold"] += offsets["rsi_oversold_offset"]
+            sharpened["rsi_oversold"] = b("rsi_oversold") + offsets["rsi_oversold_offset"]
         if "rsi_overbought_offset" in offsets:
-            sharpened["rsi_overbought"] += offsets["rsi_overbought_offset"]
+            sharpened["rsi_overbought"] = b("rsi_overbought") + offsets["rsi_overbought_offset"]
             
         # Apply ATR multiplier offset
         if "atr_multiplier_offset" in offsets:
-            sharpened["atr_multiplier"] += offsets["atr_multiplier_offset"]
+            sharpened["atr_multiplier"] = b("atr_multiplier") + offsets["atr_multiplier_offset"]
 
         # Apply Confidence offset
         if "min_confidence_offset" in offsets:
-            sharpened["min_confidence"] = max(sharpened.get("min_confidence", 3), 3) + offsets["min_confidence_offset"]
+            base_conf = sharpened.get("min_confidence", self.base_config.get("min_confidence", 3))
+            sharpened["min_confidence"] = base_conf + offsets["min_confidence_offset"]
 
         return {
             "params": sharpened,
