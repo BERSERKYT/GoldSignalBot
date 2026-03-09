@@ -49,8 +49,13 @@ def main():
     # 1. Setup Supabase Client once
     url = os.getenv("SUPABASE_URL")
     key = os.getenv("SUPABASE_KEY")
-    if not url or not key:
-        logger.error("SUPABASE_URL or SUPABASE_KEY missing in .env")
+    
+    if not url or not url.startswith("https://"):
+        logger.error(f"❌ INVALID SUPABASE_URL: '{url}'. Please check your GitHub Secrets!")
+        sys.exit(1)
+        
+    if not key:
+        logger.error("❌ SUPABASE_KEY IS MISSING. Please check your GitHub Secrets!")
         sys.exit(1)
         
     supabase_client: Client = create_client(url, key)
