@@ -151,6 +151,14 @@ def main():
                         # Add metadata for Supabase
                         signal["timeframe"] = timeframe
                         signal["strategy"] = active_strategy_name
+                        
+                        # 4.5 LIVE EXECUTION (MT5)
+                        from modules.mt5_execution import sync_execute_trade
+                        trade_res = sync_execute_trade(signal)
+                        if trade_res:
+                            signal["broker_ticket"] = trade_res.get("orderId")
+                            logger.info(f"💰 LIVE TRADE SENT! Ticket: {signal['broker_ticket']}")
+
                         # 5. Log & Output Signal
                         signal_logger.log_signal(signal, asset="XAU/USD")
                     else:

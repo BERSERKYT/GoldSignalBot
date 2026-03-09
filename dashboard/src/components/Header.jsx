@@ -134,7 +134,7 @@ export default function Header() {
                     </div>
 
                     {/* AI Adaptation Status */}
-                    <div className="hidden sm:flex flex-col items-center bg-slate-900/40 border border-slate-800 px-3 py-1.5 rounded-xl backdrop-blur-sm">
+                    <div className="hidden sm:flex flex-col items-center bg-slate-900/40 border border-slate-800 px-3 py-1.5 rounded-xl backdrop-blur-sm mr-2">
                         <div className="flex items-center gap-2">
                              <span className={`material-symbols-outlined text-sm ${settings.ai_status?.includes('Sharpening') ? 'animate-pulse text-primary' : 'text-slate-500'}`}>psychology</span>
                              <span className="text-[9px] font-black text-slate-300 uppercase tracking-tighter">AI ADAPTATION</span>
@@ -142,6 +142,12 @@ export default function Header() {
                         <div className="text-[10px] font-bold text-primary truncate max-w-[120px]">
                             {settings.ai_status || "Stable"}
                         </div>
+                    </div>
+
+                    {/* Broker Status */}
+                    <div className="hidden lg:flex items-center gap-2 bg-success/10 border border-success/20 px-3 py-1.5 rounded-xl">
+                        <div className="w-1.5 h-1.5 bg-success rounded-full animate-ping"></div>
+                        <span className="text-[9px] font-black text-success uppercase tracking-widest">XM-MT5: LIVE</span>
                     </div>
 
                     <div className="flex items-center gap-2 md:gap-3 border-l border-slate-200 dark:border-slate-800 pl-4 md:pl-6">
