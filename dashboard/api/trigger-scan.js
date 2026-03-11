@@ -14,7 +14,7 @@ export default async function handler(req, res) {
 
     try {
         const response = await fetch(
-            `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflow_id}/dispatches`,
+            `https://api.github.com/repos/${owner}/${repo}/dispatches`,
             {
                 method: 'POST',
                 headers: {
@@ -24,7 +24,7 @@ export default async function handler(req, res) {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    ref: 'main'
+                    event_type: 'manual-scan'
                 })
             }
         );
