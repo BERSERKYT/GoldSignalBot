@@ -19,7 +19,8 @@ export default function TradingViewChart({ symbol = "FX:XAUUSD", timeframe = "60
         script.type = "text/javascript";
         script.async = true;
         script.innerHTML = JSON.stringify({
-            "autosize": true,
+            "width": "100%",
+            "height": 800,
             "symbol": "OANDA:XAUUSD",
             "interval": interval,
             "timezone": "Etc/UTC",
@@ -51,8 +52,12 @@ export default function TradingViewChart({ symbol = "FX:XAUUSD", timeframe = "60
     }, [interval]);
 
     return (
-        <div className="tradingview-widget-container h-[700px] w-full rounded-xl overflow-hidden border border-slate-800 shadow-2xl" ref={container}>
-            <div id="tradingview_chart" className="h-full w-full"></div>
+        <div 
+            className="tradingview-widget-container w-full rounded-xl overflow-hidden border border-slate-800 shadow-2xl bg-black" 
+            ref={container}
+            style={{ height: '800px', minHeight: '800px' }}
+        >
+            <div id="tradingview_chart" style={{ height: '800px', width: '100%' }}></div>
         </div>
     );
 }
