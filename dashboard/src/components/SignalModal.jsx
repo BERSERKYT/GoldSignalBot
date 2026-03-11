@@ -77,7 +77,12 @@ export default function SignalModal({ signal, onClose }) {
                     {/* Chart */}
                     <div>
                         <p className="text-[10px] text-slate-500 font-bold uppercase mb-3 px-1">Market Context (Real-Time)</p>
-                        <TradingViewChart timeframe={signal.timeframe} />
+                        <TradingViewChart 
+                            timeframe={signal.timeframe} 
+                            entry={signal.entry_price}
+                            tp={signal.tp}
+                            sl={signal.sl}
+                        />
                     </div>
 
                     {/* Post-Trade Review (The "Learning" Section) */}

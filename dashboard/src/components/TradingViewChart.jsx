@@ -1,60 +1,114 @@
 import React, { useEffect, useRef } from 'react';
+import { createChart } from 'lightweight-charts';
 
-export default function TradingViewChart({ symbol = "FX:XAUUSD", timeframe = "60" }) {
-    const container = useRef();
-
-    // Map bot timeframes to TradingView intervals
-    const intervalMap = {
-        '15m': '15',
-        '1h': '60',
-        '4h': '240',
-        '1d': 'D'
-    };
-
-    const interval = intervalMap[timeframe] || "60";
+export default function TradingViewChart({ timeframe = '1h', entry, sl, tp }) {
+    const chartContainerRef = useRef();
 
     useEffect(() => {
-        const script = document.createElement("script");
-        script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
-        script.type = "text/javascript";
-        script.async = true;
-        script.innerHTML = JSON.stringify({
-            "width": "100%",
-            "height": 800,
-            "symbol": "OANDA:XAUUSD",
-            "interval": interval,
-            "timezone": "Etc/UTC",
-            "theme": "dark",
-            "style": "1",
-            "locale": "en",
-            "enable_publishing": false,
-            "hide_top_toolbar": false,
-            "hide_legend": false,
-            "save_image": true,
-            "container_id": "tradingview_chart",
-            "studies": [
-                "STD;EMA"
-            ],
-            "show_popup_button": true,
-            "popup_width": "1200",
-            "popup_height": "800",
-            "support_host": "https://www.tradingview.com"
+        if (!chartContainerRef.current) return;
+
+        // Create Chart
+        const chart = createChart(chartContainerRef.current, {
+            width: chartContainerRef.current.clientWidth,
+            height: 800,
+            layout: {
+                backgroundColor: '#000000',
+                textColor: '#d1d4dc',
+            },
+            grid: {
+                vertLines: { color: 'rgba(42, 46, 57, 0.5)' },
+                horzLines: { color: 'rgba(42, 46, 57, 0.5)' },
+            },
+            priceScale: {
+                borderColor: 'rgba(197, 203, 206, 0.8)',
+            },
+            timeScale: {
+                borderColor: 'rgba(197, 203, 206, 0.8)',
+                timeVisible: true,
+                secondsVisible: false,
+            },
         });
-        
-        // Clear previous widget
-        if (container.current) {
-            container.current.innerHTML = "";
-            container.current.appendChild(script);
-        }
-    }, [interval]);
+
+        const candleSeries = chart.addCandlestickSeries({
+            upColor: '#26a69a',
+            downColor: '#ef5350',
+            borderVisible: false,
+            wickUpColor: '#26a69a',
+            wickDownColor: '#ef5350',
+        });
+
+        // Fetch Data
+        const fetchData = async () => {
+            try {
+                const response = await fetch(`/api/chart-data?timeframe=${timeframe}`);
+                const data = await response.json();
+                if (data && Array.isArray(data)) {
+                    candleSeries.setData(data);
+                    
+                    // Fit content
+                    chart.timeScale().fitContent();
+
+                    // Add Price Lines if values provided
+                    if (entry) {
+                        candleSeries.createPriceLine({
+                            price: parseFloat(entry),
+                            color: '#2962FF', // Blue
+                            lineWidth: 2,
+                            lineStyle: 0, // Solid
+                            axisLabelVisible: true,
+                            title: 'ENTRY',
+                        });
+                    }
+
+                    if (tp) {
+                        candleSeries.createPriceLine({
+                            price: parseFloat(tp),
+                            color: '#00C853', // Green
+                            lineWidth: 2,
+                            lineStyle: 2, // Dashed
+                            axisLabelVisible: true,
+                            title: 'TP (TARGET)',
+                        });
+                    }
+
+                    if (sl) {
+                        candleSeries.createPriceLine({
+                            price: parseFloat(sl),
+                            color: '#FF5252', // Red
+                            lineWidth: 2,
+                            lineStyle: 2, // Dashed
+                            axisLabelVisible: true,
+                            title: 'SL (STOP)',
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching chart data:', error);
+            }
+        };
+
+        fetchData();
+
+        // Resize handler
+        const handleResize = () => {
+            chart.applyOptions({ width: chartContainerRef.current.clientWidth });
+        };
+        window.addEventListener('resize', handleResize);
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            chart.remove();
+        };
+    }, [timeframe, entry, sl, tp]);
 
     return (
-        <div 
-            className="tradingview-widget-container w-full rounded-xl overflow-hidden border border-slate-800 shadow-2xl bg-black" 
-            ref={container}
-            style={{ height: '800px', minHeight: '800px' }}
-        >
-            <div id="tradingview_chart" style={{ height: '800px', width: '100%' }}></div>
+        <div className="relative w-full rounded-xl overflow-hidden border border-slate-800 shadow-2xl bg-black">
+            <div ref={chartContainerRef} className="w-full h-[800px]" />
+            <div className="absolute top-4 left-4 z-10 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10">
+                <p className="text-[10px] font-black text-primary uppercase tracking-widest flex items-center gap-2">
+                    XAUUSD • Gold Spot <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span>
+                </p>
+            </div>
         </div>
     );
 }
