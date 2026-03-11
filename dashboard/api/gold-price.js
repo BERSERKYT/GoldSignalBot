@@ -48,12 +48,24 @@ export default async function handler(req, res) {
     for (const source of sources) {
         try {
             const result = await source();
+            let finalPrice = result.price;
+            
+            // 🚨 Yahoo Finance Bug Correction: 
+            // Some contracts (like GC=F Apr'26) are returning the price for 2 OUNCES (~$5,100).
+            // Gold spot is currently ~$2,500-2,600. If we see 4000+, we scale it down by 2.
+            if (finalPrice > 4000) {
+                finalPrice = parseFloat((finalPrice / 2).toFixed(2));
+                console.log(`Scaled doubled price from ${result.price} to ${finalPrice}`);
+            }
+
             return res.status(200).json({
-                price: result.price,
+                price: finalPrice,
+                raw_price: result.price,
                 symbol: 'XAU/USD',
                 currency: 'USD',
                 timestamp: new Date().toISOString(),
-                source: result.source
+                source: result.source,
+                scaled: result.price > 4000
             });
         } catch (err) {
             console.warn(`Source failed: ${err.message}`);

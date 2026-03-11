@@ -76,19 +76,27 @@ export default function Header() {
         try {
             const { error } = await supabase
                 .from('settings')
-                .update({ [field]: value, updated_at: new Date() })
+                .update({ [field]: value, updated_at: new Date().toISOString() })
                 .eq('id', 1);
             
-            if (error) throw error;
+            if (error) {
+                console.error("🗄️ Supabase Sync Error:", error);
+                throw error;
+            }
             
             // Artificial delay for visual feedback of sync
             setTimeout(() => setIsSyncing(false), 800);
         } catch (error) {
-            console.error("Sync Error:", error);
+            console.error("❌ Sync Failed:", error.message || error);
             // Revert on error
             setSettings(prev => ({ ...prev, [field]: prevValue }));
             setIsSyncing(false);
-            alert("⚠️ Connection Error: Failed to sync setting to cloud.");
+            
+            const msg = error.code === '42501' || error.message?.includes('policy') 
+                ? "Permission Denied: Ensure 'settings' table has UPDATE policy enabled for 'anon' in Supabase RLS."
+                : `Connection Error: ${error.message || "Failed to sync to cloud."}`;
+            
+            alert(`⚠️ ${msg}`);
         }
     };
 
