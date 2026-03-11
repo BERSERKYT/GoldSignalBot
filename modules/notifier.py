@@ -75,7 +75,7 @@ class TelegramNotifier:
         
         keyboard = {
             "inline_keyboard": [[
-                {"text": "📱 Open MT5 App", "url": "metatrader5://"},
+                {"text": "📱 Trade on MT5 (App)", "url": "https://t.me/mt5_bot"},
                 {"text": "📊 View Dashboard", "url": "https://gold-signal-bot.vercel.app"}
             ]]
         }
