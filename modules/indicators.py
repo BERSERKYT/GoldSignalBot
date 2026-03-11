@@ -28,6 +28,8 @@ class Indicators:
             # 1. EMAs
             df['EMA_9'] = ta.ema(df['close'], length=9)
             df['EMA_21'] = ta.ema(df['close'], length=21)
+            df['EMA_50'] = ta.ema(df['close'], length=50)
+            df['EMA_200'] = ta.ema(df['close'], length=200)
             
             # 2. RSI
             df['RSI_14'] = ta.rsi(df['close'], length=14)
