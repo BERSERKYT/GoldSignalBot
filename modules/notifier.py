@@ -64,14 +64,13 @@ class TelegramNotifier:
         reason = signal.get('reason', 'AI Confluence Detected')
         tf = signal.get('timeframe', '4h')
         
-        # Build MT5 Deep Link (Trigger app with SL/TP pre-filled)
-        # Note: XAUUSD is the standard symbol for Gold in MT5
+        # Build Universal Redirect Link (HTTPS is clickable everywhere)
         action = direction.lower()
         sl = signal['sl']
         tp = signal['tp']
         
-        # Deep link format for mobile MT5
-        mt5_link = f"mt5://trading?action={action}&symbol=XAUUSD&stoploss={sl}&takeprofit={tp}"
+        # Link to our bridge page on the dashboard
+        mt5_bridge = f"https://gold-signal-bot.vercel.app/mt5.html?action={action}&symbol=XAUUSD&sl={sl}&tp={tp}"
 
         message = (
             f"🚨 GOLD SIGNAL DETECTED 🚨\n\n"
@@ -79,8 +78,8 @@ class TelegramNotifier:
             f"Entry: ${signal['entry_price']:,.2f}\n"
             f"Take Profit: ${tp:,.2f} ✅\n"
             f"Stop Loss: ${sl:,.2f} 🛑\n\n"
-            f"⚡ QUICK TRADE (Click to open App):\n"
-            f"{mt5_link}\n\n"
+            f"🔗 ONE-TAP ENTRY (Click to open App):\n"
+            f"{mt5_bridge}\n\n"
             f"🧠 Analysis:\n{reason}\n\n"
             f"📊 TF: {tf} | Confidence: {signal.get('confidence', '?')}/5\n\n"
             f"⚠️ Trade at your own risk."
