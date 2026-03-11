@@ -32,7 +32,7 @@ class V2Strategy(BaseStrategy):
         atr = last_row.get('ATR_14', 1.0)
         close = last_row['close']
         
-        signal = {}
+        signal = None
         
         # V2 BUY: RSI Oversold (< 35) + Price rejection
         if rsi < p["rsi_oversold"] and close > prev_row['close']:
@@ -43,7 +43,8 @@ class V2Strategy(BaseStrategy):
                 "sl": round(close - (p["atr_multiplier"] * atr), 2),
                 "tp": round(close + (p["atr_multiplier"] * 3 * atr), 2), 
                 "reason": f"V2: RSI Oversold (<{p['rsi_oversold']}) recovery detected.",
-                "emoji": "🌊"
+                "emoji": "🌊",
+                "timestamp": df.index[-1]
             }
             
         # V2 SELL: RSI Overbought (> 65) + Price rejection
@@ -55,7 +56,8 @@ class V2Strategy(BaseStrategy):
                 "sl": round(close + (p["atr_multiplier"] * atr), 2),
                 "tp": round(close - (p["atr_multiplier"] * 3 * atr), 2),
                 "reason": f"V2: RSI Overbought (>{p['rsi_overbought']}) rejection detected.",
-                "emoji": "🌋"
+                "emoji": "🌋",
+                "timestamp": df.index[-1]
             }
             
         return signal

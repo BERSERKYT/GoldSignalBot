@@ -21,6 +21,7 @@ from modules.data_fetcher import DataFetcher
 from modules.indicators import Indicators
 from modules.news_filter import NewsFilter
 from modules.logger import SignalLogger
+from modules.notifier import TelegramNotifier
 from strategy.v1_strategy import V1Strategy
 from strategy.v2_strategy import V2Strategy
 from modules.sync_engine import SyncEngine
@@ -65,6 +66,7 @@ def main():
     fetcher = DataFetcher()
     news_filter = NewsFilter()
     signal_logger = SignalLogger()
+    notifier = TelegramNotifier()  # ✅ Init once, not inside loop
     
     from modules.learning_engine import LearningEngine
     learning_engine = LearningEngine(supabase_client)
@@ -95,8 +97,7 @@ def main():
             sync_engine.analyze_outcomes()
 
             # 🧠 0.7 AI SELF-LEARNING: Calculate Strategy Sharpening
-            # This looks at past performance and adjusts RSI/ATR/Confidence offsets
-            ai_adaptation = learning_engine.apply_learning({}) # Start with empty base to get sharpened offsets
+            ai_adaptation = learning_engine.apply_learning({})
             sharpened_params = ai_adaptation["params"]
             ai_status = ai_adaptation["status"]
             logger.info(f"🧠 AI ADAPTATION: Status='{ai_status}' | Sharpening Applied.")
@@ -115,6 +116,7 @@ def main():
                 logger.info(f"Successfully fetched {len(df)} candles.")
                 
                 # 1.5 Update Current Price & AI Status in Supabase for Dashboard
+                current_price = 0.0
                 try:
                     current_price = float(df.iloc[-1]['close'])
                     prev_close = float(df.iloc[-2]['close'])
@@ -136,6 +138,12 @@ def main():
                 except Exception as e:
                     logger.error(f"❌ Failed to update Supabase metadata: {e}")
 
+                # 📲 Send Telegram Heartbeat (bot alive + current price)
+                try:
+                    notifier.send_heartbeat(price=current_price, ai_status=ai_status, timeframe=timeframe)
+                except Exception as e:
+                    logger.error(f"❌ Telegram heartbeat failed: {e}")
+
                 # 2. Add Indicators
                 df = Indicators.add_all_indicators(df)
                 
@@ -152,22 +160,31 @@ def main():
                         signal["timeframe"] = timeframe
                         signal["strategy"] = active_strategy_name
                         
-                        # 4.5 LIVE EXECUTION (MT5)
-                        from modules.mt5_execution import sync_execute_trade
-                        trade_res = sync_execute_trade(signal)
-                        if trade_res:
-                            signal["broker_ticket"] = trade_res.get("orderId")
-                            logger.info(f"💰 LIVE TRADE SENT! Ticket: {signal['broker_ticket']}")
+                        # 4.5 LIVE EXECUTION (MT5 - Optional/Pro)
+                        try:
+                            from modules.mt5_execution import sync_execute_trade
+                            trade_res = sync_execute_trade(signal)
+                            if trade_res:
+                                signal["broker_ticket"] = trade_res.get("orderId")
+                                logger.info(f"💰 LIVE TRADE SENT! Ticket: {signal['broker_ticket']}")
+                        except Exception as e:
+                            logger.warning(f"MT5 execution skipped: {e}")
 
-                        # 4.7 TELEGRAM NOTIFICATION (Option 1)
-                        from modules.notifier import TelegramNotifier
-                        notifier = TelegramNotifier()
-                        notifier.send_signal(signal)
+                        # 4.7 TELEGRAM NOTIFICATION ✅ Always runs independently
+                        try:
+                            notifier.send_signal(signal)
+                        except Exception as e:
+                            logger.error(f"❌ Telegram signal notification failed: {e}")
 
                         # 5. Log & Output Signal
                         signal_logger.log_signal(signal, asset="XAU/USD")
                     else:
                         logger.info(f"No actionable signal for {active_strategy_name} on {timeframe}")
+                        # 📲 Let the user know the scan ran but no signal found
+                        try:
+                            notifier.send_no_signal(timeframe=timeframe, strategy=active_strategy_name)
+                        except Exception as e:
+                            logger.error(f"❌ Telegram no-signal notification failed: {e}")
                         
         except Exception as e:
             logger.error(f"Critical error in main loop: {e}", exc_info=True)

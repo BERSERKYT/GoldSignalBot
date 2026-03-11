@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
 export default function Header() {
@@ -8,6 +8,9 @@ export default function Header() {
         current_price: 0,
         price_change: 0
     });
+    const [livePrice, setLivePrice] = useState(null);
+    const [priceFlash, setPriceFlash] = useState(null); // 'up' | 'down' | null
+    const lastPriceRef = useRef(null);
     const [isSyncing, setIsSyncing] = useState(false);
     const [showMobileMenu, setShowMobileMenu] = useState(false);
 
@@ -36,6 +39,37 @@ export default function Header() {
         };
     }, []);
 
+    // ⚡ REAL-TIME GOLD PRICE — polls Yahoo Finance every 30 seconds
+    useEffect(() => {
+        const fetchLivePrice = async () => {
+            try {
+                // Use a CORS proxy to get Yahoo Finance data from the browser
+                const res = await fetch(
+                    'https://query1.finance.yahoo.com/v8/finance/chart/GC=F?interval=1m&range=1d',
+                    { headers: { 'Accept': 'application/json' } }
+                );
+                if (!res.ok) throw new Error('Yahoo API error');
+                const json = await res.json();
+                const price = json?.chart?.result?.[0]?.meta?.regularMarketPrice;
+                if (price && price > 0) {
+                    const newPrice = parseFloat(price.toFixed(2));
+                    if (lastPriceRef.current !== null) {
+                        setPriceFlash(newPrice > lastPriceRef.current ? 'up' : newPrice < lastPriceRef.current ? 'down' : null);
+                        setTimeout(() => setPriceFlash(null), 700);
+                    }
+                    lastPriceRef.current = newPrice;
+                    setLivePrice(newPrice);
+                }
+            } catch (err) {
+                // Silently fall back to Supabase price — no alert needed
+                console.warn('Live price fetch failed, using Supabase fallback:', err.message);
+            }
+        };
+        fetchLivePrice();
+        const interval = setInterval(fetchLivePrice, 30000); // every 30 seconds
+        return () => clearInterval(interval);
+    }, []);
+
     const updateSetting = async (field, value) => {
         setIsSyncing(true);
         const prevValue = settings[field];
@@ -62,7 +96,9 @@ export default function Header() {
         }
     };
 
+    const displayPrice = livePrice ?? settings.current_price;
     const isPositive = settings.price_change >= 0;
+    const flashColorClass = priceFlash === 'up' ? 'text-success' : priceFlash === 'down' ? 'text-danger' : (isPositive ? 'text-success' : 'text-danger');
     const isConfigError = !import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_URL.startsWith('https');
 
     return (
@@ -123,14 +159,16 @@ export default function Header() {
                 <div className="flex items-center gap-4 md:gap-6">
                     <div className="flex flex-col items-end">
                         <div className="flex items-center gap-2">
-                            <span className={`text-sm font-bold ${isPositive ? 'text-success' : 'text-danger'} group relative cursor-help`}>
-                                ${settings.current_price?.toLocaleString() || '0,000.00'}
+                            {/* Blinking dot = truly live price */}
+                            {livePrice && <div className="w-1.5 h-1.5 bg-success rounded-full animate-ping"></div>}
+                            <span className={`text-sm font-bold transition-colors duration-300 ${flashColorClass}`}>
+                                ${displayPrice?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,000.00'}
                             </span>
                             <span className={`text-[10px] ${isPositive ? 'bg-success/20 text-success' : 'bg-danger/20 text-danger'} px-1.5 py-0.5 rounded sm:block hidden`}>
                                 {isPositive ? '+' : ''}{settings.price_change}%
                             </span>
                         </div>
-                        <span className="text-[10px] text-slate-500 uppercase tracking-widest font-medium">LIVE • {settings.active_timeframe}</span>
+                        <span className="text-[10px] text-slate-500 uppercase tracking-widest font-medium">{livePrice ? '⚡ LIVE' : 'CACHED'} • {settings.active_timeframe}</span>
                     </div>
 
                     {/* AI Adaptation Status */}

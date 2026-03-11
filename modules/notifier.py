@@ -1,7 +1,7 @@
 import os
 import requests
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 logger = logging.getLogger("TelegramNotifier")
 
@@ -14,71 +14,69 @@ class TelegramNotifier:
         if not self.enabled:
             logger.warning("⚠️ Telegram credentials missing. Notifications disabled.")
 
-    def send_signal(self, signal: Dict[str, Any]):
-        """
-        Sends a formatted trading signal to Telegram with an MT5 deep link.
-        """
+    def _send(self, message: str, reply_markup: Optional[dict] = None):
+        """Core helper to send any message."""
         if not self.enabled:
             return
-
-        direction_emoji = "🟢 BUY" if signal['direction'] == "BUY" else "🔴 SELL"
-        
-        # MT5 Deep Link logic:
-        # mt5://trade?symbol=XAUUSD&type=buy&volume=0.1&stoploss=...&takeprofit=...
-        # Note: Brokers use different symbols (XAUUSD, GOLD, XAUUSD.m)
-        symbol = "XAUUSD" 
-        
-        message = (
-            f"🚀 **GOLD SIGNAL DETECTED** 🚀\n\n"
-            f"**Action:** {direction_emoji}\n"
-            f"**Entry:** {signal['entry_price']}\n"
-            f"**TP:** {signal['tp']}\n"
-            f"**SL:** {signal['sl']}\n\n"
-            f"🧠 **AI Context:**\n_{signal['reason']}_\n\n"
-            f"📊 **Timeframe:** {signal.get('timeframe', 'Unknown')}\n"
-            f"⚡ **Confidence:** {signal['confidence']}/5"
-        )
-
-        # Telegram API URL
         url = f"https://api.telegram.org/bot{self.bot_token}/sendMessage"
-        
-        # Inline Keyboard for MT5 Deep Link
-        # Note: Deep link format can vary by OS, but standard MT5 link is often:
-        # mql5.com/en/market-mobile-trading
-        # For a truly direct trade link, we use a custom URL scheme if supported.
-        # Otherwise, a button to open MT5 is best.
         payload = {
             "chat_id": self.chat_id,
             "text": message,
-            "parse_mode": "Markdown",
-            "reply_markup": {
-                "inline_keyboard": [[
-                    {"text": "📱 Open MetaTrader 5", "url": "https://www.mql5.com/en/mobile-trading"}
-                ]]
-            }
+            "parse_mode": "Markdown"
         }
-
+        if reply_markup:
+            payload["reply_markup"] = reply_markup
         try:
             response = requests.post(url, json=payload, timeout=10)
             if response.status_code == 200:
-                logger.info("✅ Telegram signal sent successfully.")
+                logger.info("✅ Telegram message sent successfully.")
             else:
                 logger.error(f"❌ Telegram API Error: {response.text}")
         except Exception as e:
             logger.error(f"❌ Failed to send Telegram message: {e}")
 
-if __name__ == "__main__":
-    # Test
-    from dotenv import load_dotenv
-    load_dotenv()
-    notifier = TelegramNotifier()
-    test_sig = {
-        "direction": "BUY",
-        "entry_price": 2040.50,
-        "tp": 2060.00,
-        "sl": 2030.00,
-        "reason": "AI Test Signal",
-        "confidence": 5,
-        "timeframe": "1h"
-    }
-    notifier.send_signal(test_sig)
+    def send_heartbeat(self, price: float, ai_status: str, timeframe: str):
+        """Sends a 'Bot is Alive' ping at startup so user knows it ran."""
+        message = (
+            f"🤖 *GoldSignalBot Online*\n\n"
+            f"📡 Scan started successfully.\n"
+            f"💰 Gold Price: *${price:,.2f}*\n"
+            f"🧠 AI Status: _{ai_status}_\n"
+            f"📊 Timeframe: `{timeframe}`\n\n"
+            f"_Scanning market for high-confidence setups..._"
+        )
+        self._send(message)
+
+    def send_no_signal(self, timeframe: str, strategy: str):
+        """Notifies user that the scan ran but no actionable signal was found."""
+        message = (
+            f"🔍 *Scan Complete — No Signal*\n\n"
+            f"Strategy `{strategy.upper()}` on `{timeframe}` found no setup this hour.\n"
+            f"_Market conditions do not align with entry criteria yet._\n\n"
+            f"✅ Bot is healthy and will scan again next hour."
+        )
+        self._send(message)
+
+    def send_signal(self, signal: Dict[str, Any]):
+        """Sends a formatted trading signal alert with MT5 deeplink button."""
+        direction_emoji = "🟢 BUY" if signal['direction'] == "BUY" else "🔴 SELL"
+
+        message = (
+            f"🚨 *GOLD SIGNAL DETECTED* 🚨\n\n"
+            f"*Action:* {direction_emoji}\n"
+            f"*Entry:* `${signal['entry_price']:,.2f}`\n"
+            f"*Take Profit:* `${signal['tp']:,.2f}` ✅\n"
+            f"*Stop Loss:* `${signal['sl']:,.2f}` 🛑\n\n"
+            f"🧠 *Analysis:*\n_{signal.get('reason', 'AI Confluence Detected')}_\n\n"
+            f"📊 Timeframe: `{signal.get('timeframe', '?')}` | "
+            f"⚡ Confidence: `{signal.get('confidence', '?')}/5`\n\n"
+            f"⚠️ _This is a signal, not financial advice. Use proper risk management._"
+        )
+        
+        keyboard = {
+            "inline_keyboard": [[
+                {"text": "📱 Open MetaTrader 5", "url": "https://www.mql5.com/en/mobile-trading"},
+                {"text": "📊 View Dashboard", "url": "https://gold-signal-bot.vercel.app"}
+            ]]
+        }
+        self._send(message, reply_markup=keyboard)
