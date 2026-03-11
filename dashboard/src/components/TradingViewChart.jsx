@@ -10,7 +10,7 @@ export default function TradingViewChart({ timeframe = '1h', entry, sl, tp }) {
         // Create Chart
         const chart = createChart(chartContainerRef.current, {
             width: chartContainerRef.current.clientWidth,
-            height: 800,
+            height: 600,
             layout: {
                 backgroundColor: '#000000',
                 textColor: '#d1d4dc',
@@ -40,8 +40,18 @@ export default function TradingViewChart({ timeframe = '1h', entry, sl, tp }) {
         // Fetch Data
         const fetchData = async () => {
             try {
+                console.log(`Fetching chart data for ${timeframe}...`);
                 const response = await fetch(`/api/chart-data?timeframe=${timeframe}`);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error(`API Error (${response.status}):`, errorText);
+                    return;
+                }
+
                 const data = await response.json();
+                console.log(`Received ${data.length} candles.`);
+                
                 if (data && Array.isArray(data)) {
                     candleSeries.setData(data);
                     
@@ -103,7 +113,7 @@ export default function TradingViewChart({ timeframe = '1h', entry, sl, tp }) {
 
     return (
         <div className="relative w-full rounded-xl overflow-hidden border border-slate-800 shadow-2xl bg-black">
-            <div ref={chartContainerRef} className="w-full h-[800px]" />
+            <div ref={chartContainerRef} className="w-full h-[600px]" />
             <div className="absolute top-4 left-4 z-10 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10">
                 <p className="text-[10px] font-black text-primary uppercase tracking-widest flex items-center gap-2">
                     XAUUSD • Gold Spot <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></span>

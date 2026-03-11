@@ -1,4 +1,4 @@
-const yf = require('yahoo-finance2').default;
+import yf from 'yahoo-finance2';
 
 export default async function handler(req, res) {
     const { timeframe = '1h' } = req.query;
