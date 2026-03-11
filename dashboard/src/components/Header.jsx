@@ -186,10 +186,20 @@ export default function Header() {
                         </div>
                     </div>
 
-                    {/* Broker Status */}
-                    <div className="hidden lg:flex items-center gap-2 bg-success/10 border border-success/20 px-3 py-1.5 rounded-xl">
-                        <div className="w-1.5 h-1.5 bg-success rounded-full animate-ping"></div>
-                        <span className="text-[9px] font-black text-success uppercase tracking-widest">XM-MT5: LIVE</span>
+                    {/* Broker Status & Trading Toggle */}
+                    <div className="hidden lg:flex flex-col items-end gap-1">
+                        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all ${settings.trading_enabled ? 'bg-danger/10 border-danger/20 text-danger' : 'bg-success/10 border-success/20 text-success'}`}>
+                            <div className={`w-1.5 h-1.5 rounded-full animate-ping ${settings.trading_enabled ? 'bg-danger' : 'bg-success'}`}></div>
+                            <span className="text-[9px] font-black uppercase tracking-widest">
+                                {settings.trading_enabled ? 'XM-MT5: LIVE TRADING' : 'XM-MT5: MONITORING'}
+                            </span>
+                        </div>
+                        <button 
+                            onClick={() => updateSetting('trading_enabled', !settings.trading_enabled)}
+                            className={`text-[8px] font-bold uppercase tracking-tighter px-2 py-0.5 rounded border transition-all ${settings.trading_enabled ? 'border-danger/30 text-danger hover:bg-danger hover:text-white' : 'border-success/30 text-success hover:bg-success hover:text-white'}`}
+                        >
+                            {settings.trading_enabled ? 'Disable Trading' : 'Enable Live Trading'}
+                        </button>
                     </div>
 
                     <div className="flex items-center gap-2 md:gap-3 border-l border-slate-200 dark:border-slate-800 pl-4 md:pl-6">

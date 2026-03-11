@@ -86,7 +86,14 @@ def main():
 
     while True:
         try:
-            # 0. Update Outcomes for PENDING signals
+            # 0. Sync settings from Cloud Command Center
+            db_settings = get_supabase_settings(supabase_client)
+            trading_enabled = False
+            if db_settings:
+                trading_enabled = db_settings.get("trading_enabled", False)
+                logger.info(f"🔄 SYNC: Cloud Settings Loaded | Trading Enabled: {trading_enabled}")
+
+            # 0.5 Update Outcomes for PENDING signals
             sync_engine.analyze_outcomes()
 
             # 🧠 AI SELF-LEARNING
@@ -143,10 +150,14 @@ def main():
                             
                             # Execute & Notify
                             try:
-                                from modules.mt5_execution import sync_execute_trade
-                                trade_res = sync_execute_trade(signal)
-                                if trade_res:
-                                    signal["broker_ticket"] = trade_res.get("orderId")
+                                if trading_enabled:
+                                    from modules.mt5_execution import sync_execute_trade
+                                    trade_res = sync_execute_trade(signal)
+                                    if trade_res:
+                                        signal["broker_ticket"] = trade_res.get("orderId")
+                                        logger.info(f"💰 LIVE TRADE PLACED: {signal['broker_ticket']}")
+                                else:
+                                    logger.info(f"🛡️ TRADING DISABLED (Cloud Settings). Skipping execution.")
                             except Exception as e:
                                 logger.warning(f"MT5 execution skipped: {e}")
 
