@@ -39,48 +39,26 @@ export default function Header() {
         };
     }, []);
 
-    // ⚡ REAL-TIME GOLD PRICE — polls metals.live every 30 seconds (free, CORS-friendly)
+    // ⚡ REAL-TIME GOLD PRICE — calls our own Vercel serverless /api/gold-price (no CORS)
     useEffect(() => {
         const fetchLivePrice = async () => {
-            // Try metals.live first (free, no API key, CORS-friendly)
-            const sources = [
-                async () => {
-                    const res = await fetch('https://metals.live/api/spot', { signal: AbortSignal.timeout(5000) });
-                    if (!res.ok) throw new Error('metals.live failed');
-                    const json = await res.json();
-                    // metals.live returns gold in USD per troy oz
-                    const price = json?.gold ?? json?.XAU;
-                    if (!price || price <= 0) throw new Error('No gold price in response');
-                    return parseFloat(price);
-                },
-                async () => {
-                    // Fallback: corsproxy wrapping Yahoo Finance
-                    const url = encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/GC=F?interval=1m&range=1d');
-                    const res = await fetch(`https://corsproxy.io/?${url}`, { signal: AbortSignal.timeout(8000) });
-                    if (!res.ok) throw new Error('corsproxy failed');
-                    const json = await res.json();
-                    const price = json?.chart?.result?.[0]?.meta?.regularMarketPrice;
-                    if (!price || price <= 0) throw new Error('No price in Yahoo response');
-                    return parseFloat(price.toFixed(2));
-                }
-            ];
-
-            for (const source of sources) {
-                try {
-                    const newPrice = await source();
+            try {
+                // Our own serverless function — runs on Vercel's servers, no CORS limitations
+                const res = await fetch('/api/gold-price', { signal: AbortSignal.timeout(8000) });
+                if (!res.ok) throw new Error(`API error ${res.status}`);
+                const data = await res.json();
+                if (data?.price && data.price > 0) {
+                    const newPrice = data.price;
                     if (lastPriceRef.current !== null) {
                         setPriceFlash(newPrice > lastPriceRef.current ? 'up' : newPrice < lastPriceRef.current ? 'down' : null);
                         setTimeout(() => setPriceFlash(null), 700);
                     }
                     lastPriceRef.current = newPrice;
                     setLivePrice(newPrice);
-                    return; // success — stop trying
-                } catch (err) {
-                    console.warn('Price source failed, trying next:', err.message);
                 }
+            } catch (err) {
+                console.warn('Live price unavailable, using cached value:', err.message);
             }
-            // All sources failed — silently keep showing last known price
-            console.warn('All live price sources failed. Showing cached Supabase value.');
         };
         fetchLivePrice();
         const interval = setInterval(fetchLivePrice, 30000); // refresh every 30s
