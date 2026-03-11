@@ -33,10 +33,7 @@ export default function TradingViewChart({ symbol = "FX:XAUUSD", timeframe = "60
             "save_image": true,
             "container_id": "tradingview_chart",
             "studies": [
-                "STD;EMA",
-                "STD;RSI",
-                "STD;MACD",
-                "STD;Bollinger_Bands"
+                "STD;EMA"
             ],
             "show_popup_button": true,
             "popup_width": "1200",
