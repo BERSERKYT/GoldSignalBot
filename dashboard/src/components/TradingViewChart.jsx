@@ -20,15 +20,24 @@ export default function TradingViewChart({ symbol = "FX:XAUUSD", timeframe = "60
         script.async = true;
         script.innerHTML = JSON.stringify({
             "autosize": true,
-            "symbol": symbol,
+            "symbol": "OANDA:XAUUSD",
             "interval": interval,
             "timezone": "Etc/UTC",
             "theme": "dark",
             "style": "1",
             "locale": "en",
             "enable_publishing": false,
-            "allow_symbol_change": true,
-            "calendar": false,
+            "hide_top_toolbar": false,
+            "hide_legend": false,
+            "save_image": true,
+            "container_id": "tradingview_chart",
+            "studies": [
+                "STD;EMA",
+                "STD;RSI"
+            ],
+            "show_popup_button": true,
+            "popup_width": "1000",
+            "popup_height": "650",
             "support_host": "https://www.tradingview.com"
         });
         
@@ -37,11 +46,11 @@ export default function TradingViewChart({ symbol = "FX:XAUUSD", timeframe = "60
             container.current.innerHTML = "";
             container.current.appendChild(script);
         }
-    }, [symbol, interval]);
+    }, [interval]); // Only update on interval change, symbol is hardcoded to gold for this bot
 
     return (
-        <div className="tradingview-widget-container h-[400px] w-full rounded-xl overflow-hidden border border-slate-800" ref={container}>
-            <div className="tradingview-widget-container__widget h-full w-full"></div>
+        <div className="tradingview-widget-container h-[600px] w-full rounded-xl overflow-hidden border border-slate-800 shadow-2xl" ref={container}>
+            <div id="tradingview_chart" className="h-full w-full"></div>
         </div>
     );
 }
