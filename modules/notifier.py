@@ -58,18 +58,29 @@ class TelegramNotifier:
         self._send(message)
 
     def send_signal(self, signal: Dict[str, Any]):
-        """Sends a formatted trading alert (Plaintext for stability)."""
+        """Sends a formatted trading alert with direct MT5 app link."""
         direction = signal['direction']
         dir_emoji = "🟢 BUY" if direction == "BUY" else "🔴 SELL"
         reason = signal.get('reason', 'AI Confluence Detected')
         tf = signal.get('timeframe', '4h')
+        
+        # Build MT5 Deep Link (Trigger app with SL/TP pre-filled)
+        # Note: XAUUSD is the standard symbol for Gold in MT5
+        action = direction.lower()
+        sl = signal['sl']
+        tp = signal['tp']
+        
+        # Deep link format for mobile MT5
+        mt5_link = f"mt5://trading?action={action}&symbol=XAUUSD&stoploss={sl}&takeprofit={tp}"
 
         message = (
             f"🚨 GOLD SIGNAL DETECTED 🚨\n\n"
             f"Action: {dir_emoji}\n"
             f"Entry: ${signal['entry_price']:,.2f}\n"
-            f"Take Profit: ${signal['tp']:,.2f} ✅\n"
-            f"Stop Loss: ${signal['sl']:,.2f} 🛑\n\n"
+            f"Take Profit: ${tp:,.2f} ✅\n"
+            f"Stop Loss: ${sl:,.2f} 🛑\n\n"
+            f"⚡ QUICK TRADE (Click to open App):\n"
+            f"{mt5_link}\n\n"
             f"🧠 Analysis:\n{reason}\n\n"
             f"📊 TF: {tf} | Confidence: {signal.get('confidence', '?')}/5\n\n"
             f"⚠️ Trade at your own risk."
@@ -77,7 +88,6 @@ class TelegramNotifier:
         
         keyboard = {
             "inline_keyboard": [[
-                {"text": "📱 Trade on MT5 (App)", "url": "https://t.me/mt5_bot"},
                 {"text": "📊 View Dashboard", "url": "https://gold-signal-bot.vercel.app"}
             ]]
         }
