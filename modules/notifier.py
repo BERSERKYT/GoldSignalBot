@@ -61,16 +61,19 @@ class TelegramNotifier:
         """Sends a formatted trading signal alert with MT5 deeplink button."""
         direction_emoji = "🟢 BUY" if signal['direction'] == "BUY" else "🔴 SELL"
 
+        reason = signal.get('reason', 'AI Confluence Detected').replace('_', '\\_')
+        tf = signal.get('timeframe', '4h').replace('_', '\\_')
+
         message = (
             f"🚨 *GOLD SIGNAL DETECTED* 🚨\n\n"
             f"*Action:* {direction_emoji}\n"
             f"*Entry:* `${signal['entry_price']:,.2f}`\n"
             f"*Take Profit:* `${signal['tp']:,.2f}` ✅\n"
             f"*Stop Loss:* `${signal['sl']:,.2f}` 🛑\n\n"
-            f"🧠 *Analysis:*\n_{signal.get('reason', 'AI Confluence Detected')}_\n\n"
-            f"📊 Timeframe: `{signal.get('timeframe', '?')}` | "
+            f"🧠 *Analysis:*\n_{reason}_\n\n"
+            f"📊 TF: `{tf}` | "
             f"⚡ Confidence: `{signal.get('confidence', '?')}/5`\n\n"
-            f"⚠️ _This is a signal, not financial advice. Use proper risk management._"
+            f"⚠️ _Trade at your own risk._"
         )
         
         keyboard = {
