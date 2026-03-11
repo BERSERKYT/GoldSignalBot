@@ -58,28 +58,18 @@ class TelegramNotifier:
         self._send(message)
 
     def send_signal(self, signal: Dict[str, Any]):
-        """Sends a formatted trading alert with direct MT5 app link."""
+        """Sends a formatted trading alert (Plaintext for stability)."""
         direction = signal['direction']
         dir_emoji = "🟢 BUY" if direction == "BUY" else "🔴 SELL"
         reason = signal.get('reason', 'AI Confluence Detected')
         tf = signal.get('timeframe', '4h')
-        
-        # Build Universal Redirect Link (HTTPS is clickable everywhere)
-        action = direction.lower()
-        sl = signal['sl']
-        tp = signal['tp']
-        
-        # Link to our bridge page on the dashboard
-        mt5_bridge = f"https://gold-signal-bot.vercel.app/mt5.html?action={action}&symbol=XAUUSD&sl={sl}&tp={tp}"
 
         message = (
             f"🚨 GOLD SIGNAL DETECTED 🚨\n\n"
             f"Action: {dir_emoji}\n"
             f"Entry: ${signal['entry_price']:,.2f}\n"
-            f"Take Profit: ${tp:,.2f} ✅\n"
-            f"Stop Loss: ${sl:,.2f} 🛑\n\n"
-            f"🔗 ONE-TAP ENTRY (Click to open App):\n"
-            f"{mt5_bridge}\n\n"
+            f"Take Profit: ${signal['tp']:,.2f} ✅\n"
+            f"Stop Loss: ${signal['sl']:,.2f} 🛑\n\n"
             f"🧠 Analysis:\n{reason}\n\n"
             f"📊 TF: {tf} | Confidence: {signal.get('confidence', '?')}/5\n\n"
             f"⚠️ Trade at your own risk."
