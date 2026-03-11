@@ -1,5 +1,4 @@
-import React from 'react';
-import SignalChart from './SignalChart';
+import TradingViewChart from './TradingViewChart';
 
 export default function SignalModal({ signal, onClose }) {
     if (!signal) return null;
@@ -77,8 +76,8 @@ export default function SignalModal({ signal, onClose }) {
 
                     {/* Chart */}
                     <div>
-                        <p className="text-[10px] text-slate-500 font-bold uppercase mb-3 px-1">Visual Analysis</p>
-                        <SignalChart signal={signal} />
+                        <p className="text-[10px] text-slate-500 font-bold uppercase mb-3 px-1">Market Context (Real-Time)</p>
+                        <TradingViewChart timeframe={signal.timeframe} />
                     </div>
 
                     {/* Post-Trade Review (The "Learning" Section) */}
