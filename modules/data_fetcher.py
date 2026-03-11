@@ -31,6 +31,7 @@ class DataFetcher:
         try:
             # Map timeframe to yfinance intervals
             interval_map = {
+                "1m": "1m",
                 "15m": "15m",
                 "1h": "1h",
                 "4h": "1h", # We fetch 1h and resample to 4h
@@ -38,8 +39,10 @@ class DataFetcher:
             }
             interval = interval_map.get(timeframe, "1h")
             
-            # yfinance limits: 15m data max 59 days.
-            if timeframe == "15m":
+            # yfinance limits: 1m data max 7 days, 15m data max 59 days.
+            if timeframe == "1m":
+                period = "7d"
+            elif timeframe == "15m":
                 period = "1mo"
             elif timeframe == "1d":
                 period = "max"
