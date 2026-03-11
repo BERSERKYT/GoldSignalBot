@@ -169,36 +169,15 @@ export default function ActiveSignal() {
     );
 }
 
-// Helper function to trigger GitHub Action
+// Helper function to trigger GitHub Action via our secure Proxy API
 async function triggerGitHubScan() {
-    // We will use VITE_GITHUB_TOKEN from environment variables
-    const token = import.meta.env.VITE_GITHUB_TOKEN;
-    const owner = "BERSERKYT"; 
-    const repo = "GoldSignalBot";
-    const workflow_id = "scan.yml"; // The filename of the workflow
-
-    if (!token) {
-        throw new Error("GitHub Token (VITE_GITHUB_TOKEN) not found in environment.");
-    }
-
-    const response = await fetch(
-        `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflow_id}/dispatches`,
-        {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/vnd.github+json',
-                'X-GitHub-Api-Version': '2022-11-28'
-            },
-            body: JSON.stringify({
-                ref: 'main' // Trigger from main branch
-            })
-        }
-    );
+    const response = await fetch('/api/trigger-scan', {
+        method: 'POST'
+    });
 
     if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `GitHub API error: ${response.status}`);
+        throw new Error(errorData.message || `Server error: ${response.status}`);
     }
 
     return true;
