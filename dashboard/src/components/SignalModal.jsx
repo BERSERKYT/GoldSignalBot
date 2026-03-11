@@ -25,7 +25,7 @@ export default function SignalModal({ signal, onClose }) {
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="w-full max-w-2xl bg-card-dark rounded-2xl border border-slate-800 overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="w-full max-w-5xl bg-card-dark rounded-2xl border border-slate-800 overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
                 {/* Header */}
                 <div className="p-6 border-b border-slate-800 flex justify-between items-center">
                     <div className="flex items-center gap-3">

@@ -33,11 +33,13 @@ export default function TradingViewChart({ symbol = "FX:XAUUSD", timeframe = "60
             "container_id": "tradingview_chart",
             "studies": [
                 "STD;EMA",
-                "STD;RSI"
+                "STD;RSI",
+                "STD;MACD",
+                "STD;Bollinger_Bands"
             ],
             "show_popup_button": true,
-            "popup_width": "1000",
-            "popup_height": "650",
+            "popup_width": "1200",
+            "popup_height": "800",
             "support_host": "https://www.tradingview.com"
         });
         
@@ -46,10 +48,10 @@ export default function TradingViewChart({ symbol = "FX:XAUUSD", timeframe = "60
             container.current.innerHTML = "";
             container.current.appendChild(script);
         }
-    }, [interval]); // Only update on interval change, symbol is hardcoded to gold for this bot
+    }, [interval]);
 
     return (
-        <div className="tradingview-widget-container h-[600px] w-full rounded-xl overflow-hidden border border-slate-800 shadow-2xl" ref={container}>
+        <div className="tradingview-widget-container h-[700px] w-full rounded-xl overflow-hidden border border-slate-800 shadow-2xl" ref={container}>
             <div id="tradingview_chart" className="h-full w-full"></div>
         </div>
     );
