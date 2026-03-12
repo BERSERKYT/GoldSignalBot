@@ -7,32 +7,37 @@ logger = logging.getLogger("TelegramNotifier")
 
 class TelegramNotifier:
     def __init__(self):
-        self.bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
-        self.chat_id = os.getenv("TELEGRAM_CHAT_ID")
+        self.bot_token = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
+        self.chat_id = os.getenv("TELEGRAM_CHAT_ID", "").strip()
         self.enabled = bool(self.bot_token and self.chat_id)
+        self.last_error = None
         
         if not self.enabled:
-            logger.warning("⚠️ Telegram credentials missing. Notifications disabled.")
+            logger.warning(f"⚠️ Telegram credentials missing (Token: {'SET' if self.bot_token else 'MISSING'}, ID: {'SET' if self.chat_id else 'MISSING'}). Notifications disabled.")
 
     def _send(self, message: str, reply_markup: Optional[dict] = None):
         """Core helper to send any message (Plaintext for stability)."""
         if not self.enabled:
             return
+
         url = f"https://api.telegram.org/bot{self.bot_token}/sendMessage"
         payload = {
             "chat_id": self.chat_id,
             "text": message
-            # Removed parse_mode: Markdown to avoid recurring crashes with special characters
         }
         if reply_markup:
             payload["reply_markup"] = reply_markup
+
         try:
-            response = requests.post(url, json=payload, timeout=10)
+            response = requests.post(url, json=payload, timeout=15)
             if response.status_code == 200:
                 logger.info("✅ Telegram message sent successfully.")
+                self.last_error = None
             else:
-                logger.error(f"❌ Telegram API Error: {response.text}")
+                self.last_error = f"HTTP {response.status_code}: {response.text}"
+                logger.error(f"❌ Telegram API Error: {self.last_error}")
         except Exception as e:
+            self.last_error = str(e)
             logger.error(f"❌ Failed to send Telegram message: {e}")
 
     def send_heartbeat(self, price: float, ai_status: str, timeframe: str):

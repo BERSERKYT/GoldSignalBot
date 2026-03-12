@@ -188,11 +188,25 @@ export default function Header() {
 
                     {/* Broker Status & Trading Toggle */}
                     <div className="hidden lg:flex flex-col items-end gap-1">
-                        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all ${settings.trading_enabled ? 'bg-danger/10 border-danger/20 text-danger' : 'bg-success/10 border-success/20 text-success'}`}>
-                            <div className={`w-1.5 h-1.5 rounded-full animate-ping ${settings.trading_enabled ? 'bg-danger' : 'bg-success'}`}></div>
-                            <span className="text-[9px] font-black uppercase tracking-widest">
-                                {settings.trading_enabled ? 'XM-MT5: LIVE TRADING' : 'XM-MT5: MONITORING'}
-                            </span>
+                        <div className="flex gap-2">
+                            {/* Telegram Status */}
+                            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all ${settings.notifier_status === 'ENABLED' ? 'bg-primary/10 border-primary/20 text-primary' : 'bg-danger/10 border-danger/20 text-danger'}`}>
+                                <div className={`w-1.5 h-1.5 rounded-full ${settings.notifier_status === 'ENABLED' ? 'bg-primary animate-pulse' : 'bg-danger'}`}></div>
+                                <span className="text-[9px] font-black uppercase tracking-widest">
+                                    {settings.notifier_status === 'ENABLED' ? 'Telegram: Active' : 'Telegram: Offline'}
+                                </span>
+                                {settings.notifier_error && (
+                                    <span className="material-symbols-outlined text-[10px] text-danger cursor-help" title={settings.notifier_error}>info</span>
+                                )}
+                            </div>
+
+                            {/* Broker Status */}
+                            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all ${settings.trading_enabled ? 'bg-danger/10 border-danger/20 text-danger' : 'bg-success/10 border-success/20 text-success'}`}>
+                                <div className={`w-1.5 h-1.5 rounded-full animate-ping ${settings.trading_enabled ? 'bg-danger' : 'bg-success'}`}></div>
+                                <span className="text-[9px] font-black uppercase tracking-widest">
+                                    {settings.trading_enabled ? 'XM-MT5: LIVE TRADING' : 'XM-MT5: MONITORING'}
+                                </span>
+                            </div>
                         </div>
                         <button 
                             onClick={() => updateSetting('trading_enabled', !settings.trading_enabled)}

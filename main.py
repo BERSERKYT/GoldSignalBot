@@ -114,6 +114,8 @@ def main():
                         "current_price": round(current_p, 2),
                         "price_change": chg_pct,
                         "ai_status": ai_status,
+                        "notifier_status": "ENABLED" if notifier.enabled else "DISABLED",
+                        "notifier_error": notifier.last_error,
                         "updated_at": datetime.utcnow().isoformat()
                     }).eq("id", 1).execute()
                     
