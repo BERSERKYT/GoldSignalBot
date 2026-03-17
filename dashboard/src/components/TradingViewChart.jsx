@@ -9,7 +9,7 @@ export default function TradingViewChart({ timeframe = '1h', entry, sl, tp }) {
 
         // Create Chart
         const chart = createChart(chartContainerRef.current, {
-            width: chartContainerRef.current.clientWidth,
+            autoSize: true, // Automatically size to container
             height: 600,
             layout: {
                 backgroundColor: '#000000',
@@ -37,6 +37,8 @@ export default function TradingViewChart({ timeframe = '1h', entry, sl, tp }) {
             wickDownColor: '#ef5350',
         });
 
+        let isMounted = true;
+
         // Fetch Data
         const fetchData = async () => {
             try {
@@ -52,11 +54,20 @@ export default function TradingViewChart({ timeframe = '1h', entry, sl, tp }) {
                 const data = await response.json();
                 console.log(`Received ${data.length} candles.`);
                 
-                if (data && Array.isArray(data)) {
-                    candleSeries.setData(data);
-                    
-                    // Fit content
-                    chart.timeScale().fitContent();
+                if (!isMounted) return;
+
+                if (data && Array.isArray(data) && data.length > 0) {
+                    // Check for invalid data format
+                    const validData = data.filter(d => typeof d.time === 'number' && !isNaN(d.open) && !isNaN(d.close));
+                    if(validData.length > 0) {
+                        candleSeries.setData(validData);
+                        
+                        // Fit content
+                        chart.timeScale().fitContent();
+                    } else {
+                        console.error('All fetched candles were invalid.');
+                        return;
+                    }
 
                     // Add Price Lines if values provided
                     if (entry) {
@@ -99,14 +110,8 @@ export default function TradingViewChart({ timeframe = '1h', entry, sl, tp }) {
 
         fetchData();
 
-        // Resize handler
-        const handleResize = () => {
-            chart.applyOptions({ width: chartContainerRef.current.clientWidth });
-        };
-        window.addEventListener('resize', handleResize);
-
         return () => {
-            window.removeEventListener('resize', handleResize);
+            isMounted = false;
             chart.remove();
         };
     }, [timeframe, entry, sl, tp]);
