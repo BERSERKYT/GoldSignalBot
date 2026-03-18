@@ -207,13 +207,44 @@ export default function Header() {
                                     {settings.trading_enabled ? 'XM-MT5: LIVE TRADING' : 'XM-MT5: MONITORING'}
                                 </span>
                             </div>
+
+                            {/* 🧠 Smart Lots Panel */}
+                            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all ${settings.smart_lots_enabled ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400' : 'bg-slate-900/40 border-slate-700 text-slate-500'}`}>
+                                <span className="material-symbols-outlined text-sm">auto_awesome</span>
+                                <div className="flex flex-col">
+                                    <span className="text-[8px] font-black uppercase tracking-widest leading-none">Smart Lots</span>
+                                    <span className={`text-[9px] font-bold ${settings.smart_lots_enabled ? 'text-yellow-400' : 'text-slate-500'}`}>
+                                        {settings.smart_lots_enabled ? `${settings.risk_percentage || 1}% RISK` : 'OFF'}
+                                    </span>
+                                </div>
+                                {settings.smart_lots_enabled && (
+                                    <select
+                                        value={settings.risk_percentage || 1.0}
+                                        onChange={(e) => updateSetting('risk_percentage', parseFloat(e.target.value))}
+                                        className="bg-transparent text-[9px] font-bold text-yellow-400 border-none p-0 focus:ring-0 cursor-pointer ml-1"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        {[0.5, 1.0, 2.0, 3.0, 5.0].map(pct => (
+                                            <option key={pct} value={pct} className="bg-card-dark text-white">{pct}%</option>
+                                        ))}
+                                    </select>
+                                )}
+                            </div>
                         </div>
-                        <button 
-                            onClick={() => updateSetting('trading_enabled', !settings.trading_enabled)}
-                            className={`text-[8px] font-bold uppercase tracking-tighter px-2 py-0.5 rounded border transition-all ${settings.trading_enabled ? 'border-danger/30 text-danger hover:bg-danger hover:text-white' : 'border-success/30 text-success hover:bg-success hover:text-white'}`}
-                        >
-                            {settings.trading_enabled ? 'Disable Trading' : 'Enable Live Trading'}
-                        </button>
+                        <div className="flex gap-2">
+                            <button 
+                                onClick={() => updateSetting('trading_enabled', !settings.trading_enabled)}
+                                className={`text-[8px] font-bold uppercase tracking-tighter px-2 py-0.5 rounded border transition-all ${settings.trading_enabled ? 'border-danger/30 text-danger hover:bg-danger hover:text-white' : 'border-success/30 text-success hover:bg-success hover:text-white'}`}
+                            >
+                                {settings.trading_enabled ? 'Disable Trading' : 'Enable Live Trading'}
+                            </button>
+                            <button
+                                onClick={() => updateSetting('smart_lots_enabled', !settings.smart_lots_enabled)}
+                                className={`text-[8px] font-bold uppercase tracking-tighter px-2 py-0.5 rounded border transition-all ${settings.smart_lots_enabled ? 'border-yellow-500/30 text-yellow-400 hover:bg-yellow-500 hover:text-black' : 'border-slate-700 text-slate-500 hover:bg-slate-700 hover:text-white'}`}
+                            >
+                                {settings.smart_lots_enabled ? '🧠 Smart Lots: ON' : 'Enable Smart Lots'}
+                            </button>
+                        </div>
                     </div>
 
                     <div className="flex items-center gap-2 md:gap-3 border-l border-slate-200 dark:border-slate-800 pl-4 md:pl-6">

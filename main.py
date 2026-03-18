@@ -89,9 +89,13 @@ def main():
             # 0. Sync settings from Cloud Command Center
             db_settings = get_supabase_settings(supabase_client)
             trading_enabled = False
+            smart_lots_enabled = False
+            risk_percentage = 1.0
             if db_settings:
                 trading_enabled = db_settings.get("trading_enabled", False)
-                logger.info(f"🔄 SYNC: Cloud Settings Loaded | Trading Enabled: {trading_enabled}")
+                smart_lots_enabled = db_settings.get("smart_lots_enabled", False)
+                risk_percentage = float(db_settings.get("risk_percentage", 1.0))
+                logger.info(f"🔄 SYNC: Cloud Settings | Trading: {trading_enabled} | Smart Lots: {smart_lots_enabled} ({risk_percentage}% risk)")
 
             # 0.5 Update Outcomes for PENDING signals
             sync_engine.analyze_outcomes()
@@ -147,6 +151,9 @@ def main():
                             # Add metadata
                             signal["timeframe"] = tf
                             signal["strategy"] = strat_name
+                            # 🧠 Inject Smart Lots settings from cloud command center
+                            signal["smart_lots_enabled"] = smart_lots_enabled
+                            signal["risk_percentage"] = risk_percentage
                             
                             logger.info(f"🎯 SIGNAL FOUND: {tf} | {strat_name} | {signal['direction']}")
                             
