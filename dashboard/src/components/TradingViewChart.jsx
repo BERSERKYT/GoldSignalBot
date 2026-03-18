@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { createChart } from 'lightweight-charts';
+import { createChart, ColorType } from 'lightweight-charts';
 
 export default function TradingViewChart({ timeframe = '1h', entry, sl, tp }) {
     const chartContainerRef = useRef();
@@ -12,7 +12,7 @@ export default function TradingViewChart({ timeframe = '1h', entry, sl, tp }) {
             autoSize: true, // Automatically size to container
             height: 600,
             layout: {
-                backgroundColor: '#000000',
+                background: { type: ColorType.Solid, color: '#000000' },
                 textColor: '#d1d4dc',
             },
             grid: {
