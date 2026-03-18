@@ -1,44 +1,50 @@
 export default async function handler(req, res) {
     const { timeframe = '1h' } = req.query;
     
-    // Map bot timeframes to Binance intervals
+    // Map bot timeframes to Kraken intervals (in minutes)
     const intervalMap = {
-        '15m': { interval: '15m', limit: 500 },
-        '1h': { interval: '1h', limit: 500 },
-        '4h': { interval: '4h', limit: 500 },
-        '1d': { interval: '1d', limit: 365 }
+        '15m': 15,
+        '1h': 60,
+        '4h': 240,
+        '1d': 1440
     };
 
-    const config = intervalMap[timeframe] || intervalMap['1h'];
+    const interval = intervalMap[timeframe] || 60;
 
     try {
-        // Fetch PAXGUSDT (Pax Gold) from Binance as a 1:1 proxy for Gold Spot
-        // Binance public API has no auth, no blocks, and is ultra-fast on Vercel
-        const url = `https://api.binance.com/api/v3/klines?symbol=PAXGUSDT&interval=${config.interval}&limit=${config.limit}`;
+        // Fetch PAXGUSD (Pax Gold) from Kraken as a proxy for Gold
+        // Kraken public API has no auth, no blocks, and allows US IPs (unlike Binance)
+        const url = `https://api.kraken.com/0/public/OHLC?pair=PAXGUSD&interval=${interval}`;
         
         const response = await fetch(url);
         if (!response.ok) {
-            throw new Error(`Binance API responded with status ${response.status}`);
+            throw new Error(`Kraken API responded with status ${response.status}`);
         }
 
-        const data = await response.json();
+        const json = await response.json();
+        
+        if (json.error && json.error.length > 0) {
+            throw new Error(`Kraken API Error: ${json.error.join(', ')}`);
+        }
+
+        const data = json.result.PAXGUSD;
 
         // Format for Lightweight Charts: { time: unix_timestamp, open, high, low, close }
-        // Binance data array format: [Open time, Open, High, Low, Close, Volume, Close time, ...]
+        // Kraken data array format: [time, open, high, low, close, vwap, volume, count]
         const formattedData = data.map(candle => ({
-            time: Math.floor(candle[0] / 1000), // convert ms to seconds
+            time: parseInt(candle[0]), // already in seconds
             open: parseFloat(candle[1]),
             high: parseFloat(candle[2]),
             low: parseFloat(candle[3]),
             close: parseFloat(candle[4])
         }));
 
-        // Sort by time just in case, though Binance guarantees order
+        // Sort by time just in case, though Kraken guarantees order
         formattedData.sort((a, b) => a.time - b.time);
 
         return res.status(200).json(formattedData);
     } catch (error) {
-        console.error('Binance Chart Fetch Error:', error);
+        console.error('Kraken Chart Fetch Error:', error);
         return res.status(500).json({ error: error.message });
     }
 }
