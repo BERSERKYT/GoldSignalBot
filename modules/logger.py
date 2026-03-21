@@ -124,6 +124,10 @@ class SignalLogger:
                     db_payload["timeframe"] = signal["timeframe"]
                 if "strategy" in signal:
                     db_payload["strategy"] = signal["strategy"]
+                if "sentiment_score" in signal:
+                    db_payload["sentiment_score"] = signal["sentiment_score"]
+                if "sentiment_bias" in signal:
+                    db_payload["sentiment_bias"] = signal["sentiment_bias"]
                 
                 self.supabase.table("signals").insert(db_payload).execute()
                 logger.info("🚀 Signal synchronized to Supabase Cloud successfully!")

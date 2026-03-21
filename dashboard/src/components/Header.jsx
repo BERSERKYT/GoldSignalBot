@@ -175,14 +175,38 @@ export default function Header() {
                         <span className="text-[10px] text-slate-500 uppercase tracking-widest font-medium">{livePrice ? '⚡ LIVE' : 'CACHED'} • {settings.active_timeframe}</span>
                     </div>
 
+                    {/* 🧠 Market Sentiment Monitor */}
+                    <div className="hidden sm:flex flex-col items-center bg-slate-900/40 border border-slate-800 px-3 py-1.5 rounded-xl backdrop-blur-sm mr-2">
+                        <div className="flex items-center gap-2">
+                             <span className={`material-symbols-outlined text-sm ${settings.sentiment_score > 0.2 ? 'text-success' : settings.sentiment_score < -0.2 ? 'text-danger' : 'text-slate-500'}`}>
+                                {settings.sentiment_score > 0.2 ? 'trending_up' : settings.sentiment_score < -0.2 ? 'trending_down' : 'public'}
+                             </span>
+                             <span className="text-[9px] font-black text-slate-300 uppercase tracking-tighter">Gold Sentiment</span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                            <div className="w-16 h-1 bg-slate-800 rounded-full overflow-hidden">
+                                <div 
+                                    className={`h-full transition-all duration-1000 ${settings.sentiment_score > 0 ? 'bg-success' : 'bg-danger'}`}
+                                    style={{ 
+                                        width: `${Math.abs(settings.sentiment_score || 0) * 100}%`,
+                                        marginLeft: settings.sentiment_score < 0 ? 'auto' : '0' 
+                                    }}
+                                ></div>
+                            </div>
+                            <span className={`text-[10px] font-bold ${settings.sentiment_score > 0.2 ? 'text-success' : settings.sentiment_score < -0.2 ? 'text-danger' : 'text-slate-400'}`}>
+                                {settings.sentiment_label || "Neutral"}
+                            </span>
+                        </div>
+                    </div>
+
                     {/* AI Adaptation Status */}
                     <div className="hidden sm:flex flex-col items-center bg-slate-900/40 border border-slate-800 px-3 py-1.5 rounded-xl backdrop-blur-sm mr-2">
                         <div className="flex items-center gap-2">
-                             <span className={`material-symbols-outlined text-sm ${settings.ai_status?.includes('Sharpening') ? 'animate-pulse text-primary' : 'text-slate-500'}`}>psychology</span>
-                             <span className="text-[9px] font-black text-slate-300 uppercase tracking-tighter">AI ADAPTATION</span>
+                             <span className={`material-symbols-outlined text-sm ${settings.ai_status?.includes('Defensive') ? 'animate-pulse text-primary' : 'text-slate-500'}`}>psychology</span>
+                             <span className="text-[9px] font-black text-slate-300 uppercase tracking-tighter">AI Focus</span>
                         </div>
                         <div className="text-[10px] font-bold text-primary truncate max-w-[120px]">
-                            {settings.ai_status || "Stable"}
+                            {settings.ai_status || "Standard"}
                         </div>
                     </div>
 

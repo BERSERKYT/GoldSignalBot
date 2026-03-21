@@ -11,64 +11,57 @@ class LearningEngine:
             "rsi_overbought": 70,
             "rsi_oversold": 30,
             "atr_multiplier": 2.0,
-            "min_confidence": 3
+            "min_confidence": 0.8
         }
 
-    def get_current_adaptation(self) -> Dict[str, Any]:
+    def get_current_adaptation(self, timeframe: str = None) -> Dict[str, Any]:
         """
-        Analyzes the last N signals and returns strategy offsets.
-        Returns a dictionary of 'adjustments' and a 'status' string for the UI.
+        Analyzes the last N signals (filtered by timeframe if provided) and returns strategy offsets.
         """
         try:
-            response = self.supabase.from_('signals') \
-                .select('status, direction, confidence') \
+            query = self.supabase.from_('signals') \
+                .select('status, direction, confidence, timeframe') \
                 .neq('direction', 'WAIT') \
                 .order('created_at', desc=True) \
-                .limit(self.lookback_period) \
-                .execute()
+                .limit(self.lookback_period)
 
+            if timeframe:
+                query = query.eq('timeframe', timeframe)
+
+            response = query.execute()
             signals = response.data
-            if not signals or len(signals) < 5:
+            
+            if not signals or len(signals) < 3:
                 return {
                     "offsets": {},
-                    "status": "Learning (Need more data)",
+                    "status": f"Learning {timeframe or 'Global'}",
                     "win_rate": 0
                 }
 
             wins = len([s for s in signals if s['status'] == 'WIN'])
             losses = len([s for s in signals if s['status'] == 'LOSS'])
             total_resolved = wins + losses
-
-            if total_resolved == 0:
-                return {"offsets": {}, "status": "Stable (Initializing)", "win_rate": 0}
-
-            win_rate = (wins / total_resolved) * 100
+            
+            win_rate = (wins / total_resolved) * 100 if total_resolved > 0 else 0
             
             adjustments = {}
             status = "Stable"
 
-            # 1. Logic: If Win Rate is Low (< 45%), become more conservative
-            if win_rate < 45:
-                # Tighten RSI (require more extreme oversold/overbought)
-                adjustments["rsi_oversold_offset"] = -5 # e.g. 30 -> 25
-                adjustments["rsi_overbought_offset"] = 5 # e.g. 70 -> 75
-                # Increase minimum confidence
-                adjustments["min_confidence_offset"] = 1
-                status = "Defensive (Sharpening)"
+            # ⚙️ LOGIC A: If Win Rate is Low (< 45%), become more conservative
+            if win_rate < 45 and total_resolved >= 3:
+                adjustments["rsi_oversold_offset"] = -5 
+                adjustments["rsi_overbought_offset"] = 5 
+                adjustments["min_confidence_offset"] = 0.05 
+                status = "Defensive"
             
-            # 2. Logic: If Win Rate is Excellent (> 70%), maintain strictness but allow more signals
-            elif win_rate > 70:
-                status = "Optimized (High Accuracy)"
-            
-            # 3. Logic: If many Recent losses, widen SL slightly to avoid noise hunts
-            # (Simplified check: last 3 signals)
-            last_3 = signals[:3]
+            # ⚙️ LOGIC B: Widen SL if recent noise is high
+            last_3 = [s for s in signals if s['status'] in ['WIN', 'LOSS']][:3]
             recent_losses = len([s for s in last_3 if s['status'] == 'LOSS'])
             if recent_losses >= 2:
-                adjustments["atr_multiplier_offset"] = 0.5 # e.g. 2.0 -> 2.5
-                status = "Adaptive (Volatility Filter)"
+                adjustments["atr_multiplier_offset"] = 0.5 
+                status = "Adaptive"
 
-            logger.info(f"🧠 Learning Engine: Win Rate {win_rate:.1f}% | Mode: {status}")
+            logger.info(f"🧠 [AI:{timeframe or 'Global'}] Win Rate {win_rate:.1f}% ({total_resolved} trades) | Status: {status}")
             
             return {
                 "offsets": adjustments,
@@ -81,11 +74,11 @@ class LearningEngine:
             logger.error(f"Error in LearningEngine: {e}")
             return {"offsets": {}, "status": "Error (Stable Mode)", "win_rate": 0}
 
-    def apply_learning(self, current_strategy_params: Dict[str, Any]) -> Dict[str, Any]:
+    def apply_learning(self, current_strategy_params: Dict[str, Any], timeframe: str = None) -> Dict[str, Any]:
         """
-        Main entry point for main.py. Takes current params, returns sharpened ones.
+        Main entry point for main.py. Takes current params, returns sharpened ones per timeframe.
         """
-        adaptation = self.get_current_adaptation()
+        adaptation = self.get_current_adaptation(timeframe=timeframe)
         offsets = adaptation["offsets"]
         
         sharpened = current_strategy_params.copy()
@@ -105,7 +98,7 @@ class LearningEngine:
 
         # Apply Confidence offset
         if "min_confidence_offset" in offsets:
-            base_conf = sharpened.get("min_confidence", self.base_config.get("min_confidence", 3))
+            base_conf = sharpened.get("min_confidence", self.base_config.get("min_confidence", 0.8))
             sharpened["min_confidence"] = base_conf + offsets["min_confidence_offset"]
 
         return {
