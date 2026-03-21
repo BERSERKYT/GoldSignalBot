@@ -54,28 +54,36 @@ class V3Strategy(BaseStrategy):
         
         # V3 BUY logic
         if close > ema_fast > ema_slow and rsi > 60:
+            base_conf = 0.8
+            rsi_bonus = 0.1 if rsi > 70 else 0.0
+            confidence = round(base_conf + rsi_bonus, 2)
+            
             sl_dist = atr * p["atr_multiplier"]
             signal = {
                 "direction": "BUY",
-                "confidence": 4 if rsi > 65 else 3,
+                "confidence": confidence,
                 "entry_price": round(close, 2),
                 "sl": round(close - sl_dist, 2),
                 "tp": round(close + (sl_dist * p["tp_multiplier"]), 2),
-                "reason": f"V3 Scalp: Bullish alignment (Price > EMA) + RSI strength ({rsi:.0f})",
+                "reason": f"V3 Scalp: Bullish (Price > EMA) + RSI {rsi:.1f}",
                 "emoji": "⚡",
                 "timestamp": df.index[-1]
             }
             
         # V3 SELL logic
         elif close < ema_fast < ema_slow and rsi < 40:
+            base_conf = 0.8
+            rsi_bonus = 0.1 if rsi < 30 else 0.0
+            confidence = round(base_conf + rsi_bonus, 2)
+            
             sl_dist = atr * p["atr_multiplier"]
             signal = {
                 "direction": "SELL",
-                "confidence": 4 if rsi < 35 else 3,
+                "confidence": confidence,
                 "entry_price": round(close, 2),
                 "sl": round(close + sl_dist, 2),
                 "tp": round(close - (sl_dist * p["tp_multiplier"]), 2),
-                "reason": f"V3 Scalp: Bearish alignment (Price < EMA) + RSI weakness ({rsi:.0f})",
+                "reason": f"V3 Scalp: Bearish (Price < EMA) + RSI {rsi:.1f}",
                 "emoji": "🔥",
                 "timestamp": df.index[-1]
             }

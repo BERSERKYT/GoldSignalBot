@@ -26,6 +26,7 @@ from strategy.v1_strategy import V1Strategy
 from strategy.v2_strategy import V2Strategy
 from strategy.v3_strategy import V3Strategy
 from modules.sync_engine import SyncEngine
+from modules.market_calendar import is_market_open
 
 # Strategy Factory
 STRATEGIES = {
@@ -86,6 +87,24 @@ def main():
 
     while True:
         try:
+            # 🛡️ 1. MARKET HOURS GUARD (XAU/USD)
+            if not is_market_open():
+                logger.warning("🌍 Market is CLOSED. Skipping all scans until Sunday open.")
+                # If single run (GitHub Actions), we exit now to save minutes
+                if os.getenv("SINGLE_RUN", "false").lower() == "true":
+                    break
+                time.sleep(3600) # Check again in 1 hour if in loop mode
+                continue
+
+            # 🛡️ 2. DAILY SIGNAL CAP (MAX 5)
+            daily_count = signal_logger.get_daily_count()
+            if daily_count >= 5:
+                logger.warning(f"🛑 DAILY CAP REACHED ({daily_count}/5 signals). No more signals today.")
+                if os.getenv("SINGLE_RUN", "false").lower() == "true":
+                    break
+                time.sleep(3600)
+                continue
+
             # 0. Sync settings from Cloud Command Center
             db_settings = get_supabase_settings(supabase_client)
             trading_enabled = False
@@ -148,6 +167,15 @@ def main():
                         signal = strategy.generate_signal(df, current_price=curr_p, params=sharpened_params)
                         
                         if signal:
+                            # 🛡️ 3. HIGH CONFIDENCE FILTER (MIN 80%)
+                            conf = signal.get("confidence", 0)
+                            if conf < 0.8:
+                                logger.info(f"⏩ Skipping {strat_name} signal: Confidence {conf:.2f} is below 0.8 floor.")
+                                continue
+                            
+                            if conf >= 0.9:
+                                logger.info(f"💎 PREMIUM SIGNAL FOUND: Confidence {conf:.2f} (90%+ Priority)")
+
                             # Add metadata
                             signal["timeframe"] = tf
                             signal["strategy"] = strat_name

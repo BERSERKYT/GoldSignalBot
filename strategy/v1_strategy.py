@@ -80,13 +80,13 @@ class V1Strategy(BaseStrategy):
         if buy_cross and latest['RSI_14'] > p["rsi_buy"] and high_volatility:
             direction = "BUY"
             
-            # Confidence logic
-            if p["rsi_healthy_buy_low"] <= latest['RSI_14'] <= p["rsi_healthy_buy_high"]:
-                confidence = 5
-                reason = "Strong bullish EMA cross + ideal RSI healthy zone + high volatility"
-            else:
-                confidence = p["min_confidence"]
-                reason = f"Bullish EMA cross + RSI > {p['rsi_buy']} + high volatility"
+            # 🧠 NEW: Decimal Confidence (0.0 - 1.0)
+            base_conf = 0.8  # Floor is 80%
+            rsi_bonus = 0.1 if p["rsi_healthy_buy_low"] <= latest['RSI_14'] <= p["rsi_healthy_buy_high"] else 0.0
+            volat_bonus = 0.1 if latest['ATR_14'] > (latest['ATR_14_MA_20'] * 1.5) else 0.0
+            
+            confidence = round(base_conf + rsi_bonus + volat_bonus, 2)
+            reason = f"V1: EMA Cross + RSI {latest['RSI_14']:.1f} + Volat Factor {latest['ATR_14']/latest['ATR_14_MA_20']:.1f}x"
             emoji = "🟢"
             
             # Risk Management
@@ -98,13 +98,13 @@ class V1Strategy(BaseStrategy):
         elif sell_cross and latest['RSI_14'] < p["rsi_sell"] and high_volatility:
             direction = "SELL"
             
-            # Confidence logic
-            if p["rsi_healthy_sell_low"] <= latest['RSI_14'] <= p["rsi_healthy_sell_high"]:
-                confidence = 5
-                reason = "Strong bearish EMA cross + ideal RSI healthy zone + high volatility"
-            else:
-                confidence = p["min_confidence"]
-                reason = f"Bearish EMA cross + RSI < {p['rsi_sell']} + high volatility"
+            # 🧠 NEW: Decimal Confidence (0.0 - 1.0)
+            base_conf = 0.8  # Floor is 80%
+            rsi_bonus = 0.1 if p["rsi_healthy_sell_low"] <= latest['RSI_14'] <= p["rsi_healthy_sell_high"] else 0.0
+            volat_bonus = 0.1 if latest['ATR_14'] > (latest['ATR_14_MA_20'] * 1.5) else 0.0
+            
+            confidence = round(base_conf + rsi_bonus + volat_bonus, 2)
+            reason = f"V1: EMA Cross + RSI {latest['RSI_14']:.1f} + Volat Factor {latest['ATR_14']/latest['ATR_14_MA_20']:.1f}x"
             emoji = "🔴"
             
             # Risk Management

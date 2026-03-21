@@ -60,6 +60,8 @@ class SignalLogger:
         time_str = timestamp.strftime('%Y-%m-%d %H:%M GMT')
         dir_str = signal.get("direction", "WAIT")
         conf = signal.get("confidence", 0)
+        percentage = f"{int(conf * 100)}%" if conf <= 1.0 else f"{int((conf/5)*100)}%"
+        
         entry = signal.get("entry_price", 0.0)
         sl = signal.get("sl", 0.0)
         tp = signal.get("tp", 0.0)
@@ -71,7 +73,7 @@ class SignalLogger:
             f"💰 NEW SIGNAL GENERATED 💰\n"
             f"Asset: {asset}\n"
             f"Time:  [{time_str}]\n"
-            f"Trade: {emoji} {dir_str} (Confidence: {conf}/5)\n"
+            f"Trade: {emoji} {dir_str} (Confidence: {percentage})\n"
             f"Entry: {entry}\n"
             f"SL:    {sl} (ATR-based)\n"
             f"TP:    {tp} (R:R 1:3)\n"
@@ -127,3 +129,23 @@ class SignalLogger:
                 logger.info("🚀 Signal synchronized to Supabase Cloud successfully!")
             except Exception as e:
                 logger.error(f"Failed to push signal to Supabase: {e}")
+
+    def get_daily_count(self) -> int:
+        """
+        Returns the number of signals already generated today (UTC).
+        """
+        if not hasattr(self, 'supabase') or not self.supabase:
+            return 0
+            
+        try:
+            # Start of today in ISO format (UTC)
+            today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+            
+            # Select signals created today
+            response = self.supabase.table("signals").select("id").gt("created_at", today_start).execute()
+            count = len(response.data) if response.data else 0
+            logger.info(f"📊 Daily Signal Count: {count}")
+            return count
+        except Exception as e:
+            logger.error(f"Failed to fetch daily signal count: {e}")
+            return 0

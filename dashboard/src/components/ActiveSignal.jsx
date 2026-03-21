@@ -82,7 +82,11 @@ export default function ActiveSignal() {
     const glowClass = isBuy ? 'glow-green' : 'shadow-[0_0_20px_rgba(239,68,68,0.2)]';
     const borderClass = isBuy ? 'bg-success' : 'bg-danger';
     const icon = isBuy ? '🟢' : '🔴';
-    const percentage = (activeSignal.confidence / 5) * 100;
+    
+    // 🧠 Support both old (1-5) and new (0.0-1.0) confidence scales
+    const percentage = activeSignal.confidence <= 1.0 
+        ? Math.round(activeSignal.confidence * 100) 
+        : Math.round((activeSignal.confidence / 5) * 100);
     return (
         <div className={`bg-card-dark rounded-xl border border-slate-800 overflow-hidden relative ${glowClass} ${isPulsing ? 'animate-signal-pulse' : ''} transition-all duration-500`}>
             <div className={`absolute top-0 left-0 w-1 h-full ${borderClass}`}></div>

@@ -68,6 +68,8 @@ class TelegramNotifier:
         dir_emoji = "🟢 BUY" if direction == "BUY" else "🔴 SELL"
         reason = signal.get('reason', 'AI Confluence Detected')
         tf = signal.get('timeframe', '4h')
+        conf = signal.get('confidence', 0)
+        percentage = f"{int(conf * 100)}%" if conf <= 1.0 else f"{int((conf/5)*100)}%"
 
         message = (
             f"🚨 GOLD SIGNAL DETECTED 🚨\n\n"
@@ -76,7 +78,7 @@ class TelegramNotifier:
             f"Take Profit: ${signal['tp']:,.2f} ✅\n"
             f"Stop Loss: ${signal['sl']:,.2f} 🛑\n\n"
             f"🧠 Analysis:\n{reason}\n\n"
-            f"📊 TF: {tf} | Confidence: {signal.get('confidence', '?')}/5\n\n"
+            f"📊 TF: {tf} | Confidence: {percentage}\n\n"
             f"⚠️ Trade at your own risk."
         )
         
