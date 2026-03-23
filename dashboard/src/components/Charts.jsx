@@ -32,10 +32,23 @@ export default function Charts() {
                     return balance;
                 });
 
+                // Step 2: Per-Strategy Stats
+                const strategyMap = {};
+                data.forEach(sig => {
+                    const sName = sig.strategy || 'Unknown';
+                    if (!strategyMap[sName]) {
+                        strategyMap[sName] = { total: 0, wins: 0, losses: 0 };
+                    }
+                    strategyMap[sName].total++;
+                    if (sig.status === 'WIN') strategyMap[sName].wins++;
+                    if (sig.status === 'LOSS') strategyMap[sName].losses++;
+                });
+
                 setStats({
                     winRate: Math.round(winRate),
                     lossRate: Math.round(lossRate),
                     equityData: equityPoints,
+                    strategyStats: strategyMap,
                     hasData: true
                 });
             }
@@ -63,29 +76,51 @@ export default function Charts() {
                 </div>
 
                 {stats.hasData ? (
-                    <div className="h-48 md:h-64 flex items-end gap-0.5 md:gap-1 px-2 md:px-4">
-                        {stats.equityData.map((val, i) => {
-                            // Normalize display height
-                            const min = Math.min(0, ...stats.equityData);
-                            const max = Math.max(10, ...stats.equityData);
-                            const range = max - min;
-                            const height = ((val - min) / (range || 1)) * 100;
+                    <>
+                        <div className="h-40 md:h-56 flex items-end gap-0.5 md:gap-1 px-2 md:px-4 mb-8">
+                            {stats.equityData.map((val, i) => {
+                                const min = Math.min(0, ...stats.equityData);
+                                const max = Math.max(10, ...stats.equityData);
+                                const range = max - min;
+                                const height = ((val - min) / (range || 1)) * 100;
 
-                            return (
-                                <div
-                                    key={i}
-                                    className={`flex-1 rounded-t-[1px] transition-all cursor-crosshair group relative ${val >= 0 ? 'bg-gradient-to-t from-primary/5 to-primary/40' : 'bg-gradient-to-t from-danger/5 to-danger/40'}`}
-                                    style={{ height: `${height}%`, minHeight: '3px' }}
-                                >
-                                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-[10px] text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap border border-slate-700 z-10">Accumulated RR: {val}</div>
-                                </div>
-                            );
-                        })}
-                        {/* Fill the rest with placeholders if few signals */}
-                        {stats.equityData.length < 20 && [...Array(20 - stats.equityData.length)].map((_, i) => (
-                            <div key={i} className="flex-1 bg-slate-800/10 rounded-t-sm h-1" />
-                        ))}
-                    </div>
+                                return (
+                                    <div
+                                        key={i}
+                                        className={`flex-1 rounded-t-[1px] transition-all cursor-crosshair group relative ${val >= 0 ? 'bg-gradient-to-t from-primary/5 to-primary/40' : 'bg-gradient-to-t from-danger/5 to-danger/40'}`}
+                                        style={{ height: `${height}%`, minHeight: '3px' }}
+                                    >
+                                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-[10px] text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap border border-slate-700 z-10">Accumulated RR: {val}</div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        
+                        {/* 📊 Per-Strategy Table */}
+                        <div className="mt-4 border-t border-slate-800 pt-6">
+                            <h4 className="text-slate-300 text-[10px] uppercase font-bold tracking-widest mb-4">Performance Breakdown</h4>
+                            <div className="grid grid-cols-3 gap-4">
+                                {Object.entries(stats.strategyStats || {}).filter(([name]) => name !== 'v2').map(([name, s]) => {
+                                    const wr = s.total > 0 ? ((s.wins / (s.wins + s.losses || 1)) * 100).toFixed(0) : 0;
+                                    return (
+                                        <div key={name} className="bg-slate-900/40 rounded-lg p-3 border border-slate-800/50">
+                                            <div className="flex justify-between items-center mb-1">
+                                                <span className="text-primary font-bold text-xs uppercase">{name}</span>
+                                                <span className="text-white text-xs font-bold">{wr}%</span>
+                                            </div>
+                                            <div className="flex justify-between items-end">
+                                                <span className="text-slate-500 text-[9px] uppercase">Signals</span>
+                                                <span className="text-slate-300 text-[10px] font-medium">{s.total}</span>
+                                            </div>
+                                            <div className="w-full h-1 bg-slate-800 rounded-full mt-2 overflow-hidden">
+                                                <div className="h-full bg-primary" style={{ width: `${wr}%` }}></div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </>
                 ) : (
                     <div className="h-48 md:h-64 flex flex-col items-center justify-center border-2 border-dashed border-slate-800 rounded-xl">
                         <span className="material-symbols-outlined text-4xl text-slate-700 mb-2">monitoring</span>

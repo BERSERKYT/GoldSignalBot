@@ -144,7 +144,7 @@ class SyncEngine:
             existing_dates = {pd.to_datetime(s['created_at']).date() for s in existing.data}
 
             v1 = self.strategy_factory.get("v1")
-            v2 = self.strategy_factory.get("v2")
+            v4 = self.strategy_factory.get("v4")
             
             daily_signals = {}
             total_filled = 0
@@ -162,13 +162,13 @@ class SyncEngine:
                 
                 # Try v1
                 sig = v1.generate_signal(window)
-                # If v1 fails, try v2
+                # If v1 fails, try v4
                 if not sig:
-                    sig = v2.generate_signal(window)
+                    sig = v4.generate_signal(window)
                 
                 if sig:
                     sig["timeframe"] = "1h"
-                    sig["strategy"] = "v1" if sig.get("emoji") == "🟢" or sig.get("emoji") == "🔴" else "v2"
+                    sig["strategy"] = "v1" if sig.get("emoji") == "🟢" or sig.get("emoji") == "🔴" else "v4"
                     sig["timestamp"] = current_time
                     self.signal_logger.log_signal(sig)
                     

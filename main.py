@@ -23,19 +23,13 @@ from modules.news_filter import NewsFilter
 from modules.logger import SignalLogger
 from modules.notifier import TelegramNotifier
 from strategy.v1_strategy import V1Strategy
-from strategy.v2_strategy import V2Strategy
+from strategy.v4_strategy import V4Strategy
 from strategy.v3_strategy import V3Strategy
 from modules.sync_engine import SyncEngine
 from modules.market_calendar import is_market_open
 from modules.sentiment_engine import SentimentEngine
 
-# Strategy Factory
-STRATEGIES = {
-    "v1": V1Strategy(),
-    "v2": V2Strategy(),
-    "v3": V3Strategy()
-}
-
+# TIMEFRAMES monitored by the bot
 TIMEFRAMES = ["15m", "1h", "4h", "1d"]
 
 def get_supabase_settings(supabase: Client):
@@ -70,6 +64,14 @@ def main():
 
     # 2. Initialize components
     fetcher = DataFetcher()
+    
+    # Strategy Factory (Now initialized inside main to pass fetcher to V4)
+    strategies_map = {
+        "v1": V1Strategy(),
+        "v4": V4Strategy(fetcher=fetcher),
+        "v3": V3Strategy()
+    }
+    
     news_filter = NewsFilter()
     signal_logger = SignalLogger()
     notifier = TelegramNotifier()
@@ -79,7 +81,7 @@ def main():
     sentiment_engine = SentimentEngine()
     
     # Initialize SyncEngine
-    sync_engine = SyncEngine(supabase_client, fetcher, STRATEGIES, signal_logger)
+    sync_engine = SyncEngine(supabase_client, fetcher, strategies_map, signal_logger)
     
     # 🏁 HISTORICAL RECOVERY
     sync_engine.backfill_gaps(start_date="2026-03-02")
@@ -162,7 +164,7 @@ def main():
                     ai_adaptation = learning_engine.apply_learning({}, timeframe=tf)
                     sharpened_params = ai_adaptation["params"]
                     
-                    for strat_name, strategy in STRATEGIES.items():
+                    for strat_name, strategy in strategies_map.items():
                         logger.info(f"   ∟ Checking {strat_name}...")
                         signal = strategy.generate_signal(df, current_price=curr_p, params=sharpened_params)
                         
