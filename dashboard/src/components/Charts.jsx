@@ -66,73 +66,68 @@ export default function Charts() {
 
     return (
         <div className="grid grid-cols-12 gap-4 md:gap-6">
-            {/* Equity Curve */}
+            {/* Performance Breakdown Main Card */}
             <div className="col-span-12 lg:col-span-8 bg-card-dark rounded-xl border border-slate-800 p-4 md:p-8 min-h-[300px] md:min-h-[400px] relative overflow-hidden">
-                <div className="flex justify-between items-start mb-6 md:mb-8">
-                    <div>
-                        <h3 className="text-white font-bold text-base md:text-lg mb-1">Equity Growth</h3>
-                        <p className="text-slate-500 text-xs md:text-sm">Real-time performance tracking</p>
-                    </div>
+                <div className="mb-8">
+                    <h3 className="text-white font-bold text-base md:text-lg mb-1">Strategy Performance</h3>
+                    <p className="text-slate-500 text-xs md:text-sm">Live breakdown of algorithmic success</p>
                 </div>
 
                 {stats.hasData ? (
-                    <>
-                        <div className="h-40 md:h-56 flex items-end gap-0.5 md:gap-1 px-2 md:px-4 mb-8">
-                            {stats.equityData.map((val, i) => {
-                                const min = Math.min(0, ...stats.equityData);
-                                const max = Math.max(10, ...stats.equityData);
-                                const range = max - min;
-                                const height = ((val - min) / (range || 1)) * 100;
-
-                                return (
-                                    <div
-                                        key={i}
-                                        className={`flex-1 rounded-t-[1px] transition-all cursor-crosshair group relative ${val >= 0 ? 'bg-gradient-to-t from-primary/5 to-primary/40' : 'bg-gradient-to-t from-danger/5 to-danger/40'}`}
-                                        style={{ height: `${height}%`, minHeight: '3px' }}
-                                    >
-                                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-[10px] text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap border border-slate-700 z-10">Accumulated RR: {val}</div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                        
-                        {/* 📊 Per-Strategy Table */}
-                        <div className="mt-4 border-t border-slate-800 pt-6">
-                            <h4 className="text-slate-300 text-[10px] uppercase font-bold tracking-widest mb-4">Performance Breakdown</h4>
-                            <div className="grid grid-cols-3 gap-4">
-                                {Object.entries(stats.strategyStats || {}).filter(([name]) => name !== 'v2').map(([name, s]) => {
-                                    const wr = s.total > 0 ? ((s.wins / (s.wins + s.losses || 1)) * 100).toFixed(0) : 0;
-                                    return (
-                                        <div key={name} className="bg-slate-900/40 rounded-lg p-3 border border-slate-800/50">
-                                            <div className="flex justify-between items-center mb-1">
-                                                <span className="text-primary font-bold text-xs uppercase">{name}</span>
-                                                <span className="text-white text-xs font-bold">{wr}%</span>
-                                            </div>
-                                            <div className="flex justify-between items-end">
-                                                <span className="text-slate-500 text-[9px] uppercase">Signals</span>
-                                                <span className="text-slate-300 text-[10px] font-medium">{s.total}</span>
-                                            </div>
-                                            <div className="w-full h-1 bg-slate-800 rounded-full mt-2 overflow-hidden">
-                                                <div className="h-full bg-primary" style={{ width: `${wr}%` }}></div>
-                                            </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {Object.entries(stats.strategyStats || {}).filter(([name]) => name !== 'v2').map(([name, s]) => {
+                            const wr = s.total > 0 ? ((s.wins / (s.wins + s.losses || 1)) * 100).toFixed(0) : 0;
+                            return (
+                                <div key={name} className="bg-slate-900/60 rounded-2xl p-6 border border-slate-800 hover:border-primary/50 transition-all group">
+                                    <div className="flex justify-between items-center mb-6">
+                                        <div className="flex flex-col">
+                                            <span className="text-primary font-black text-xl tracking-tighter uppercase">{name}</span>
+                                            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Strategy Instance</span>
                                         </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    </>
+                                        <div className="bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
+                                            <span className="text-primary text-sm font-bold">{wr}% WR</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="space-y-4">
+                                        <div className="flex justify-between items-end">
+                                            <span className="text-slate-400 text-xs font-medium">Total Signals</span>
+                                            <span className="text-white text-lg font-bold">{s.total}</span>
+                                        </div>
+                                        
+                                        <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider">
+                                            <span className="text-success">Wins: {s.wins}</span>
+                                            <span className="text-danger">Losses: {s.losses}</span>
+                                        </div>
+
+                                        <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden border border-slate-700/50">
+                                            <div 
+                                                className="h-full bg-gradient-to-r from-primary to-primary-light transition-all duration-1000 shadow-[0_0_10px_rgba(59,130,246,0.5)]" 
+                                                style={{ width: `${wr}%` }}
+                                            ></div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="mt-6 flex items-center gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
+                                        <span className="material-symbols-outlined text-xs text-primary">analytics</span>
+                                        <span className="text-[10px] text-slate-500 font-bold uppercase">Optimized via AI</span>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
                 ) : (
-                    <div className="h-48 md:h-64 flex flex-col items-center justify-center border-2 border-dashed border-slate-800 rounded-xl">
+                    <div className="h-64 flex flex-col items-center justify-center border-2 border-dashed border-slate-800 rounded-xl">
                         <span className="material-symbols-outlined text-4xl text-slate-700 mb-2">monitoring</span>
                         <p className="text-slate-500 text-sm">Waiting for finalized trade outcomes...</p>
                     </div>
                 )}
             </div>
 
-            {/* Win/Loss Distribution */}
+            {/* Win/Loss Distribution Sidebar */}
             <div className="col-span-12 lg:col-span-4 bg-card-dark rounded-xl border border-slate-800 p-6 md:p-8 flex flex-col">
-                <h3 className="text-white font-bold text-base md:text-lg mb-1">Strategy Accuracy</h3>
-                <p className="text-slate-500 text-xs md:text-sm mb-6 md:mb-8">Live Win/Loss Ratio</p>
+                <h3 className="text-white font-bold text-base md:text-lg mb-1">Global Accuracy</h3>
+                <p className="text-slate-500 text-xs md:text-sm mb-6 md:mb-8">Aggregated Bot Precision</p>
 
                 <div className="flex-1 flex flex-col justify-center gap-6 md:gap-8">
                     <div>
@@ -140,7 +135,7 @@ export default function Charts() {
                             <span className="text-success">Successful Signals</span>
                             <span className="text-white">{stats.winRate}%</span>
                         </div>
-                        <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden">
+                        <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden border border-slate-700/50">
                             <div className="h-full bg-success transition-all duration-1000" style={{ width: `${stats.winRate}%` }}></div>
                         </div>
                     </div>
@@ -149,13 +144,13 @@ export default function Charts() {
                             <span className="text-danger">Failed Signals</span>
                             <span className="text-white">{stats.lossRate}%</span>
                         </div>
-                        <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden">
+                        <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden border border-slate-700/50">
                             <div className="h-full bg-danger transition-all duration-1000" style={{ width: `${stats.lossRate}%` }}></div>
                         </div>
                     </div>
                 </div>
 
-                <div className="mt-6 md:mt-8 p-3 md:p-4 rounded-lg bg-slate-900/50 border border-slate-800">
+                <div className="mt-6 md:mt-8 p-3 md:p-4 rounded-xl bg-slate-900/50 border border-slate-800">
                     <p className="text-[9px] md:text-[10px] text-slate-500 font-bold uppercase mb-1">Status</p>
                     <div className="flex items-center gap-2">
                         <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-primary animate-ping"></div>
