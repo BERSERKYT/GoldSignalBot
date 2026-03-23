@@ -98,15 +98,6 @@ def main():
                 time.sleep(3600) # Check again in 1 hour if in loop mode
                 continue
 
-            # 🛡️ 2. DAILY SIGNAL CAP (MAX 5)
-            daily_count = signal_logger.get_daily_count()
-            if daily_count >= 5:
-                logger.warning(f"🛑 DAILY CAP REACHED ({daily_count}/5 signals). No more signals today.")
-                if os.getenv("SINGLE_RUN", "false").lower() == "true":
-                    break
-                time.sleep(3600)
-                continue
-
             # 0. Sync settings from Cloud Command Center
             db_settings = get_supabase_settings(supabase_client)
             trading_enabled = False
@@ -151,6 +142,8 @@ def main():
                 logger.error(f"Metadata update failed: {e}")
 
             # --- 🚀 UNIVERSAL SCAN: ALL TIMEFRAMES & ALL STRATEGIES ---
+            found_signals = []
+            
             if not news_filter.is_safe_to_trade():
                 logger.warning("News Filter active: Skipping scans.")
             else:
@@ -177,57 +170,71 @@ def main():
                             # 🛡️ 3. HIGH CONFIDENCE FILTER + SENTIMENT BIAS
                             conf = signal.get("confidence", 0)
                             
-                            # Apply Sentiment Bias: Boost if sentiment aligns with trade direction
-                            # Gold Sentiment > 0 is Bullish.
+                            # Apply Sentiment Bias
                             bias = 0
                             if sentiment_score > 0.2 and signal["direction"] == "BUY":
                                 bias = 0.05
                             elif sentiment_score < -0.2 and signal["direction"] == "SELL":
                                 bias = 0.05
                             elif sentiment_score > 0.2 and signal["direction"] == "SELL":
-                                bias = -0.05 # Penalty for trading against news sentiment
+                                bias = -0.05 
                                 
                             conf = round(conf + bias, 2)
                             signal["confidence"] = conf
                             signal["sentiment_bias"] = bias
                             signal["market_sentiment"] = sentiment_score
+                            
                             if conf < 0.8:
-                                logger.info(f"⏩ Skipping {strat_name} signal: Confidence {conf:.2f} is below 0.8 floor.")
+                                logger.info(f"⏩ Discarding {strat_name} ({tf}): Confidence {conf:.2f} < 0.8")
                                 continue
                             
-                            if conf >= 0.9:
-                                logger.info(f"💎 PREMIUM SIGNAL FOUND: Confidence {conf:.2f} (90%+ Priority)")
-
                             # Add metadata
                             signal["timeframe"] = tf
                             signal["strategy"] = strat_name
-                            # 🧠 Inject Smart Lots settings from cloud command center
                             signal["smart_lots_enabled"] = smart_lots_enabled
                             signal["risk_percentage"] = risk_percentage
                             
-                            logger.info(f"🎯 SIGNAL FOUND: {tf} | {strat_name} | {signal['direction']}")
-                            
-                            # Execute & Notify
-                            try:
-                                if trading_enabled:
-                                    from modules.mt5_execution import sync_execute_trade
-                                    trade_res = sync_execute_trade(signal)
-                                    if trade_res:
-                                        signal["broker_ticket"] = trade_res.get("orderId")
-                                        logger.info(f"💰 LIVE TRADE PLACED: {signal['broker_ticket']}")
-                                else:
-                                    logger.info(f"🛡️ TRADING DISABLED (Cloud Settings). Skipping execution.")
-                            except Exception as e:
-                                logger.warning(f"MT5 execution skipped: {e}")
+                            found_signals.append(signal)
+                    
+            # --- 🏆 BATCH PROCESSING & RANKING ---
+            if found_signals:
+                # 1. Sort by confidence (Highest First) to ensure we take only the BEST ones
+                found_signals.sort(key=lambda x: x['confidence'], reverse=True)
+                
+                # 2. Check remaining slots for the day
+                current_daily_count = signal_logger.get_daily_count()
+                remaining_slots = max(0, 5 - current_daily_count)
+                
+                logger.info(f"🎯 Scan Cycle Complete. Found {len(found_signals)} potential signals. Remaining slots today: {remaining_slots}")
+                
+                # 3. Process only the top signals that fit
+                for signal in found_signals[:remaining_slots]:
+                    logger.info(f"✅ Processing Top Signal: {signal['timeframe']} {signal['strategy']} (Conf: {signal['confidence']:.2f})")
+                    
+                    # Execute & Notify
+                    try:
+                        if trading_enabled:
+                            from modules.mt5_execution import sync_execute_trade
+                            trade_res = sync_execute_trade(signal)
+                            if trade_res:
+                                signal["broker_ticket"] = trade_res.get("orderId")
+                                logger.info(f"💰 LIVE TRADE PLACED: {signal['broker_ticket']}")
+                        else:
+                            logger.info(f"🛡️ TRADING DISABLED (Cloud Settings). Skipping execution.")
+                    except Exception as e:
+                        logger.warning(f"MT5 execution failed: {e}")
 
-                            try:
-                                notifier.send_signal(signal)
-                            except Exception as e:
-                                logger.error(f"Notifier error: {e}")
+                    try:
+                        notifier.send_signal(signal)
+                    except Exception as e:
+                        logger.error(f"Notifier error: {e}")
 
-                            signal_logger.log_signal(signal, asset="XAU/USD")
-                        
-            logger.info("Universal scan complete.")
+                    signal_logger.log_signal(signal, asset="XAU/USD")
+                
+                if len(found_signals) > remaining_slots:
+                    logger.warning(f"🛑 {len(found_signals) - remaining_slots} signals were discarded due to daily cap. Only the highest confidence ones were sent.")
+
+            logger.info("Universal scan cycle complete.")
             
         except Exception as e:
             logger.error(f"Critical error in main loop: {e}", exc_info=True)
