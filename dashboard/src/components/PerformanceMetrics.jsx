@@ -53,7 +53,7 @@ export default function PerformanceMetrics() {
     }, []);
 
     return (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+        <div className="grid grid-cols-2 gap-4 md:gap-6 h-full">
             <div className="bg-card-dark rounded-xl border border-slate-800 p-4 md:p-6 hover:border-primary/50 transition-colors">
                 <p className="text-[9px] md:text-[10px] text-slate-500 font-bold uppercase mb-1 md:mb-2">Winrate</p>
                 <div className="flex items-center justify-between">
