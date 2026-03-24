@@ -164,6 +164,13 @@ def main():
                     ai_adaptation = learning_engine.apply_learning({}, timeframe=tf)
                     sharpened_params = ai_adaptation["params"]
                     
+                    # Update Cloud Status
+                    if supabase_client:
+                        supabase_client.table("settings").update({
+                            "ai_status": ai_adaptation["status"],
+                            "ai_lessons": ai_adaptation["insight"]
+                        }).eq("id", 1).execute()
+                    
                     for strat_name, strategy in strategies_map.items():
                         logger.info(f"   ∟ Checking {strat_name}...")
                         signal = strategy.generate_signal(df, current_price=curr_p, params=sharpened_params)

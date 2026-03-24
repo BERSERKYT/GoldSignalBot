@@ -2,6 +2,7 @@ import React from 'react'
 import Header from './components/Header'
 import ActiveSignal from './components/ActiveSignal'
 import Charts from './components/Charts'
+import LearningConsole from './components/LearningConsole'
 import PerformanceMetrics from './components/PerformanceMetrics'
 import RecentSignals from './components/RecentSignals'
 
@@ -16,8 +17,11 @@ function App() {
           {/* Main Content Area (Center-Left) */}
           <div className="col-span-12 lg:col-span-9 flex flex-col gap-6">
             <ActiveSignal />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+               <LearningConsole />
+               <PerformanceMetrics />
+            </div>
             <Charts />
-            <PerformanceMetrics />
           </div>
 
           {/* Right Sidebar */}

@@ -46,6 +46,7 @@ class LearningEngine:
             
             adjustments = {}
             status = "Stable"
+            insight = "Bot is performing within expected parameters. Standard strategy logic applied."
 
             # ⚙️ LOGIC A: If Win Rate is Low (< 45%), become more conservative
             if win_rate < 45 and total_resolved >= 3:
@@ -53,6 +54,7 @@ class LearningEngine:
                 adjustments["rsi_overbought_offset"] = 5 
                 adjustments["min_confidence_offset"] = 0.05 
                 status = "Defensive"
+                insight = f"Low win rate ({win_rate:.1f}%) detected on {timeframe or 'All'}. AI has tightened RSI filters and increased confidence requirements to protect capital."
             
             # ⚙️ LOGIC B: Widen SL if recent noise is high
             last_3 = [s for s in signals if s['status'] in ['WIN', 'LOSS']][:3]
@@ -60,6 +62,7 @@ class LearningEngine:
             if recent_losses >= 2:
                 adjustments["atr_multiplier_offset"] = 0.5 
                 status = "Adaptive"
+                insight = "Sequence of losses detected. AI has increased ATR Multiplier (+0.5) to account for higher market noise and prevent premature Stop Loss hits."
 
             logger.info(f"🧠 [AI:{timeframe or 'Global'}] Win Rate {win_rate:.1f}% ({total_resolved} trades) | Status: {status}")
             
@@ -67,12 +70,13 @@ class LearningEngine:
                 "offsets": adjustments,
                 "status": status,
                 "win_rate": win_rate,
-                "sample_size": total_resolved
+                "sample_size": total_resolved,
+                "insight": insight
             }
 
         except Exception as e:
             logger.error(f"Error in LearningEngine: {e}")
-            return {"offsets": {}, "status": "Error (Stable Mode)", "win_rate": 0}
+            return {"offsets": {}, "status": "Error (Stable Mode)", "win_rate": 0, "insight": "An error occurred during adaptation. Operating in stable mode."}
 
     def apply_learning(self, current_strategy_params: Dict[str, Any], timeframe: str = None) -> Dict[str, Any]:
         """
@@ -103,5 +107,6 @@ class LearningEngine:
 
         return {
             "params": sharpened,
-            "status": adaptation["status"]
+            "status": adaptation["status"],
+            "insight": adaptation["insight"]
         }

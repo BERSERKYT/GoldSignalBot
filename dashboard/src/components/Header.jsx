@@ -66,6 +66,24 @@ export default function Header() {
     }, []);
 
 
+    const [showMore, setShowMore] = useState(false);
+    const moreInfoRef = useRef(null);
+
+    // Handle clicking outside of the 'More Status' menu to close it
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (moreInfoRef.current && !moreInfoRef.current.contains(event.target)) {
+                setShowMore(false);
+            }
+        }
+        if (showMore) {
+            document.addEventListener("mousedown", handleClickOutside);
+        } else {
+            document.removeEventListener("mousedown", handleClickOutside);
+        }
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [showMore]);
+
     const updateSetting = async (field, value) => {
         setIsSyncing(true);
         const prevValue = settings[field];
@@ -146,8 +164,8 @@ export default function Header() {
                                 className="bg-transparent text-xs font-bold text-slate-300 border-none p-0 focus:ring-0 cursor-pointer hover:text-primary transition-colors uppercase"
                             >
                                 <option value="v1" className="bg-card-dark tracking-widest">V1 - EMA Cross</option>
-                                <option value="v2" className="bg-card-dark tracking-widest">V2 - Breakout</option>
                                 <option value="v3" className="bg-card-dark tracking-widest">V3 - Scalper</option>
+                                <option value="v4" className="bg-card-dark tracking-widest">V4 - PRO SMC</option>
                             </select>
                         </div>
 
@@ -163,7 +181,6 @@ export default function Header() {
                 <div className="flex items-center gap-4 md:gap-6">
                     <div className="flex flex-col items-end">
                         <div className="flex items-center gap-2">
-                            {/* Blinking dot = truly live price */}
                             {livePrice && <div className="w-1.5 h-1.5 bg-success rounded-full animate-ping"></div>}
                             <span className={`text-sm font-bold transition-colors duration-300 ${flashColorClass}`}>
                                 ${displayPrice?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0,000.00'}
@@ -181,18 +198,9 @@ export default function Header() {
                              <span className={`material-symbols-outlined text-sm ${settings.sentiment_score > 0.2 ? 'text-success' : settings.sentiment_score < -0.2 ? 'text-danger' : 'text-slate-500'}`}>
                                 {settings.sentiment_score > 0.2 ? 'trending_up' : settings.sentiment_score < -0.2 ? 'trending_down' : 'public'}
                              </span>
-                             <span className="text-[9px] font-black text-slate-300 uppercase tracking-tighter">Gold Sentiment</span>
+                             <span className="text-[9px] font-black text-slate-300 uppercase tracking-tighter">Sentiment</span>
                         </div>
                         <div className="flex items-center gap-2 mt-0.5">
-                            <div className="w-16 h-1 bg-slate-800 rounded-full overflow-hidden">
-                                <div 
-                                    className={`h-full transition-all duration-1000 ${settings.sentiment_score > 0 ? 'bg-success' : 'bg-danger'}`}
-                                    style={{ 
-                                        width: `${Math.abs(settings.sentiment_score || 0) * 100}%`,
-                                        marginLeft: settings.sentiment_score < 0 ? 'auto' : '0' 
-                                    }}
-                                ></div>
-                            </div>
                             <span className={`text-[10px] font-bold ${settings.sentiment_score > 0.2 ? 'text-success' : settings.sentiment_score < -0.2 ? 'text-danger' : 'text-slate-400'}`}>
                                 {settings.sentiment_label || "Neutral"}
                             </span>
@@ -210,66 +218,73 @@ export default function Header() {
                         </div>
                     </div>
 
-                    {/* Broker Status & Trading Toggle */}
-                    <div className="hidden lg:flex flex-col items-end gap-1">
-                        <div className="flex gap-2">
+                    {/* Compact Mode Toggle */}
+                    <button 
+                        onClick={() => setShowMore(!showMore)}
+                        className={`hidden lg:flex items-center gap-2 px-3 py-2 rounded-xl border transition-all ${showMore ? 'bg-primary/10 border-primary/40 text-primary' : 'bg-slate-900/40 border-slate-800 text-slate-500 hover:border-slate-700'}`}
+                    >
+                        <span className="text-[10px] font-bold uppercase tracking-widest">{showMore ? 'Less Info' : 'More Status'}</span>
+                        <span className={`material-symbols-outlined text-sm transition-transform duration-300 ${showMore ? 'rotate-180' : ''}`}>expand_more</span>
+                    </button>
+
+                    {/* Expandable System Status */}
+                    {showMore && (
+                        <div ref={moreInfoRef} className="absolute top-full right-4 mt-2 bg-slate-900/95 border border-slate-800 p-4 rounded-2xl backdrop-blur-xl shadow-2xl flex flex-col gap-3 animate-in fade-in zoom-in-95 duration-200 min-w-[240px]">
+                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest border-b border-slate-800 pb-2 mb-1">System Status</p>
+                            
                             {/* Telegram Status */}
-                            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all ${settings.notifier_status === 'ENABLED' ? 'bg-primary/10 border-primary/20 text-primary' : 'bg-danger/10 border-danger/20 text-danger'}`}>
-                                <div className={`w-1.5 h-1.5 rounded-full ${settings.notifier_status === 'ENABLED' ? 'bg-primary animate-pulse' : 'bg-danger'}`}></div>
-                                <span className="text-[9px] font-black uppercase tracking-widest">
-                                    {settings.notifier_status === 'ENABLED' ? 'Telegram: Active' : 'Telegram: Offline'}
-                                </span>
-                                {settings.notifier_error && (
-                                    <span className="material-symbols-outlined text-[10px] text-danger cursor-help" title={settings.notifier_error}>info</span>
-                                )}
+                            <div className="flex items-center justify-between">
+                                <span className="text-[10px] text-slate-400 uppercase font-medium">Telegram</span>
+                                <div className={`flex items-center gap-2 px-2 py-1 rounded-lg ${settings.notifier_status === 'ENABLED' ? 'bg-primary/10 text-primary' : 'bg-danger/10 text-danger'}`}>
+                                    <div className={`w-1 h-1 rounded-full ${settings.notifier_status === 'ENABLED' ? 'bg-primary animate-pulse' : 'bg-danger'}`}></div>
+                                    <span className="text-[9px] font-bold uppercase">{settings.notifier_status === 'ENABLED' ? 'Active' : 'Offline'}</span>
+                                </div>
                             </div>
 
                             {/* Broker Status */}
-                            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all ${settings.trading_enabled ? 'bg-danger/10 border-danger/20 text-danger' : 'bg-success/10 border-success/20 text-success'}`}>
-                                <div className={`w-1.5 h-1.5 rounded-full animate-ping ${settings.trading_enabled ? 'bg-danger' : 'bg-success'}`}></div>
-                                <span className="text-[9px] font-black uppercase tracking-widest">
-                                    {settings.trading_enabled ? 'XM-MT5: LIVE TRADING' : 'XM-MT5: MONITORING'}
-                                </span>
+                            <div className="flex items-center justify-between">
+                                <span className="text-[10px] text-slate-400 uppercase font-medium">MT5 Connection</span>
+                                <div className={`flex items-center gap-2 px-2 py-1 rounded-lg ${settings.trading_enabled ? 'bg-danger/10 text-danger' : 'bg-success/10 text-success'}`}>
+                                    <div className={`w-1 h-1 rounded-full ${settings.trading_enabled ? 'bg-danger animate-ping' : 'bg-success'}`}></div>
+                                    <span className="text-[9px] font-bold uppercase">{settings.trading_enabled ? 'Live' : 'Monitoring'}</span>
+                                </div>
                             </div>
 
-                            {/* 🧠 Smart Lots Panel */}
-                            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all ${settings.smart_lots_enabled ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400' : 'bg-slate-900/40 border-slate-700 text-slate-500'}`}>
-                                <span className="material-symbols-outlined text-sm">auto_awesome</span>
-                                <div className="flex flex-col">
-                                    <span className="text-[8px] font-black uppercase tracking-widest leading-none">Smart Lots</span>
-                                    <span className={`text-[9px] font-bold ${settings.smart_lots_enabled ? 'text-yellow-400' : 'text-slate-500'}`}>
-                                        {settings.smart_lots_enabled ? `${settings.risk_percentage || 1}% RISK` : 'OFF'}
-                                    </span>
+                            {/* Smart Lots */}
+                            <div className="flex items-center justify-between">
+                                <span className="text-[10px] text-slate-400 uppercase font-medium">Risk Control</span>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[9px] font-bold text-yellow-400">{settings.smart_lots_enabled ? `${settings.risk_percentage || 1}%` : 'OFF'}</span>
+                                    {settings.smart_lots_enabled && (
+                                        <select
+                                            value={settings.risk_percentage || 1.0}
+                                            onChange={(e) => updateSetting('risk_percentage', parseFloat(e.target.value))}
+                                            className="bg-transparent text-[9px] font-bold text-yellow-400 border-none p-0 focus:ring-0 cursor-pointer"
+                                        >
+                                            {[0.5, 1.0, 2.0, 3.0, 5.0].map(pct => (
+                                                <option key={pct} value={pct} className="bg-slate-900 text-white">{pct}%</option>
+                                            ))}
+                                        </select>
+                                    )}
                                 </div>
-                                {settings.smart_lots_enabled && (
-                                    <select
-                                        value={settings.risk_percentage || 1.0}
-                                        onChange={(e) => updateSetting('risk_percentage', parseFloat(e.target.value))}
-                                        className="bg-transparent text-[9px] font-bold text-yellow-400 border-none p-0 focus:ring-0 cursor-pointer ml-1"
-                                        onClick={(e) => e.stopPropagation()}
-                                    >
-                                        {[0.5, 1.0, 2.0, 3.0, 5.0].map(pct => (
-                                            <option key={pct} value={pct} className="bg-card-dark text-white">{pct}%</option>
-                                        ))}
-                                    </select>
-                                )}
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2 mt-2 pt-3 border-t border-slate-800">
+                                <button 
+                                    onClick={() => updateSetting('trading_enabled', !settings.trading_enabled)}
+                                    className={`text-[8px] font-bold uppercase py-1.5 rounded border transition-all ${settings.trading_enabled ? 'border-danger/30 text-danger hover:bg-danger hover:text-white' : 'border-success/30 text-success hover:bg-success hover:text-white'}`}
+                                >
+                                    {settings.trading_enabled ? 'Stop MT5' : 'Start MT5'}
+                                </button>
+                                <button
+                                    onClick={() => updateSetting('smart_lots_enabled', !settings.smart_lots_enabled)}
+                                    className={`text-[8px] font-bold uppercase py-1.5 rounded border transition-all ${settings.smart_lots_enabled ? 'border-yellow-500/30 text-yellow-400 hover:bg-yellow-500 hover:text-black' : 'border-slate-700 text-slate-500 hover:bg-slate-700 hover:text-white'}`}
+                                >
+                                    {settings.smart_lots_enabled ? 'Smart: ON' : 'Smart: OFF'}
+                                </button>
                             </div>
                         </div>
-                        <div className="flex gap-2">
-                            <button 
-                                onClick={() => updateSetting('trading_enabled', !settings.trading_enabled)}
-                                className={`text-[8px] font-bold uppercase tracking-tighter px-2 py-0.5 rounded border transition-all ${settings.trading_enabled ? 'border-danger/30 text-danger hover:bg-danger hover:text-white' : 'border-success/30 text-success hover:bg-success hover:text-white'}`}
-                            >
-                                {settings.trading_enabled ? 'Disable Trading' : 'Enable Live Trading'}
-                            </button>
-                            <button
-                                onClick={() => updateSetting('smart_lots_enabled', !settings.smart_lots_enabled)}
-                                className={`text-[8px] font-bold uppercase tracking-tighter px-2 py-0.5 rounded border transition-all ${settings.smart_lots_enabled ? 'border-yellow-500/30 text-yellow-400 hover:bg-yellow-500 hover:text-black' : 'border-slate-700 text-slate-500 hover:bg-slate-700 hover:text-white'}`}
-                            >
-                                {settings.smart_lots_enabled ? '🧠 Smart Lots: ON' : 'Enable Smart Lots'}
-                            </button>
-                        </div>
-                    </div>
+                    )}
 
                     <div className="flex items-center gap-2 md:gap-3 border-l border-slate-200 dark:border-slate-800 pl-4 md:pl-6">
                         {/* Mobile Settings Toggle */}
