@@ -42,7 +42,6 @@ export default function TradingViewChart({ timeframe = '1h', entry, sl, tp }) {
         // Fetch Data
         const fetchData = async () => {
             try {
-                console.log(`Fetching chart data for ${timeframe}...`);
                 const response = await fetch(`/api/chart-data?timeframe=${timeframe}`);
                 
                 if (!response.ok) {
@@ -52,7 +51,6 @@ export default function TradingViewChart({ timeframe = '1h', entry, sl, tp }) {
                 }
 
                 const data = await response.json();
-                console.log(`Received ${data.length} candles.`);
                 
                 if (!isMounted) return;
 

@@ -1,1 +1,0 @@
-# GoldSignalBot – strategies package
