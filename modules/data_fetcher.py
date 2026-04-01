@@ -4,6 +4,7 @@ import pandas as pd
 import yfinance as yf
 from datetime import datetime
 import logging
+import concurrent.futures
 
 logger = logging.getLogger(__name__)
 
@@ -29,49 +30,57 @@ class DataFetcher:
 
     def _fetch_yfinance(self, timeframe, limit) -> pd.DataFrame:
         try:
-            # Map timeframe to yfinance intervals
-            interval_map = {
-                "1m": "1m",
-                "15m": "15m",
-                "1h": "1h",
-                "4h": "1h", # We fetch 1h and resample to 4h
-                "1d": "1d"
-            }
+            import requests
+            
+            # Map timeframe to Yahoo intervals
+            interval_map = {"1m": "1m", "15m": "15m", "1h": "1h", "4h": "1h", "1d": "1d"}
             interval = interval_map.get(timeframe, "1h")
             
-            # yfinance limits: 1m data max 7 days, 15m data max 59 days.
-            if timeframe == "1m":
-                period = "7d"
-            elif timeframe == "15m":
-                period = "1mo"
-            elif timeframe == "1d":
-                period = "max"
-            else:
-                period = "2mo"
+            # Yahoo Finance limits
+            if timeframe == "1m": period = "7d"
+            elif timeframe == "15m": period = "1mo"
+            elif timeframe == "1d": period = "10y"
+            else: period = "2mo"
                 
             symbol_to_yf = "GC=F"
             
-            logger.info(f"Fetching {symbol_to_yf} data from yfinance ({interval}, {period})...")
-            df = yf.download(symbol_to_yf, interval=interval, period=period, progress=False, auto_adjust=True)
+            logger.info(f"Fetching {symbol_to_yf} ({interval}, {period}) via Direct Yahoo API...")
             
-            if df is None or df.empty:
-                logger.warning(f"No data returned for {symbol_to_yf} ({interval}, {period})")
+            url = f"https://query2.finance.yahoo.com/v8/finance/chart/{symbol_to_yf}?interval={interval}&range={period}"
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36"
+            }
+            
+            # Strict 15-second timeout on requests
+            res = requests.get(url, headers=headers, timeout=15)
+            res.raise_for_status()
+            data = res.json()
+            
+            if not data.get("chart", {}).get("result"):
+                logger.warning(f"No result returned by Direct Yahoo API for {symbol_to_yf}")
                 return pd.DataFrame()
                 
-            # Flatten columns robustly for different yfinance versions
-            if isinstance(df.columns, pd.MultiIndex):
-                # Handle MultiIndex by taking the first level (e.g., ('Close', 'GC=F') -> 'Close')
-                df.columns = [col[0].lower() for col in df.columns]
-            else:
-                # Handle single Index
-                df.columns = [col.lower() for col in df.columns]
+            result = data["chart"]["result"][0]
+            timestamps = result.get("timestamp", [])
+            indicators = result.get("indicators", {}).get("quote", [{}])[0]
             
-            # Additional safety: rename 'adj close' to 'close' if present and 'close' is missing
-            if 'adj close' in df.columns and 'close' not in df.columns:
-                df.rename(columns={'adj close': 'close'}, inplace=True)
+            if not timestamps or not indicators:
+                logger.warning(f"Empty data returned by Direct Yahoo API for {symbol_to_yf}")
+                return pd.DataFrame()
             
-            # Remove any duplicated columns if any
-            df = df.loc[:, ~df.columns.duplicated()]
+            # Parse the custom JSON structure into a DataFrame
+            df = pd.DataFrame({
+                "timestamp": [datetime.utcfromtimestamp(ts) for ts in timestamps],
+                "open": indicators.get("open", []),
+                "high": indicators.get("high", []),
+                "low": indicators.get("low", []),
+                "close": indicators.get("close", []),
+                "volume": indicators.get("volume", [])
+            })
+            
+            # Clean up missing data (Yahoo occasionally returns None in quotes)
+            df.ffill(inplace=True)
+            df.set_index("timestamp", inplace=True)
 
             # Custom Resampling for 4H
             if timeframe == "4h":
@@ -82,21 +91,14 @@ class DataFetcher:
                     'close': 'last',
                     'volume': 'sum'
                 }).dropna()
-
-            # Ensure the Index is the timestamp column
-            if 'timestamp' not in df.columns:
-                df.index.name = 'timestamp'
-                # Don't reset_index yet, let SyncEngine use the index or reset it itself.
-                # To maintain compatibility with existing logger and strategies that expect 'close' col etc.
-                pass
             
-            # Slice to limit
+            # Slice to required limit
             df = df.tail(limit)
             
             return df
             
         except Exception as e:
-            logger.error(f"❌ Critical Failure in yfinance Fetcher: {e}")
+            logger.error(f"❌ Critical Failure in Direct Yahoo Fetcher: {e}")
             if "GC=F" in str(e):
                 logger.error("💡 Suggestion: Check if 'GC=F' is still the correct ticker for Gold Futures.")
             return pd.DataFrame()

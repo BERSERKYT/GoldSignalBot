@@ -36,5 +36,6 @@ Because the initial conversation history was lost, this tracker documents the **
 - **Task 2**: [To be defined]
 
 ### [April 1, 2026]
+- **Bug Fix**: Replaced the buggy `yfinance` package in `modules/data_fetcher.py` with a custom direct JSON data fetcher using Yahoo Finance's raw undocumented API (`query2.finance.yahoo.com/v8`). This bypassed the freeze bug affecting the bot since March 26 and preserved a $0 solution.
 - **Documentation**: Created `PROJECT_TRACKER.md` to establish a persistent record of the project structure and future edits.
 
