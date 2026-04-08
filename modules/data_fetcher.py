@@ -1,7 +1,6 @@
 import os
 import requests
 import pandas as pd
-import yfinance as yf
 from datetime import datetime
 import logging
 import concurrent.futures
