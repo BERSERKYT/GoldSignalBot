@@ -33,13 +33,13 @@ class DataFetcher:
             import requests
             
             # Map timeframe to Yahoo intervals
-            interval_map = {"1m": "1m", "15m": "15m", "1h": "1h", "4h": "1h", "1d": "1d"}
+            interval_map = {"1m": "1m", "15m": "15m", "1h": "1h", "2h": "1h", "4h": "1h", "1d": "1d", "1wk": "1wk"}
             interval = interval_map.get(timeframe, "1h")
             
             # Yahoo Finance limits
             if timeframe == "1m": period = "7d"
             elif timeframe == "15m": period = "1mo"
-            elif timeframe == "1d": period = "10y"
+            elif timeframe in ["1d", "1wk"]: period = "10y"
             else: period = "2mo"
                 
             symbol_to_yf = "GC=F"
@@ -82,14 +82,14 @@ class DataFetcher:
             df.ffill(inplace=True)
             df.set_index("timestamp", inplace=True)
 
-            # Custom Resampling for 4H
+            # Custom Resampling for higher timeframes synthesized from 1H
             if timeframe == "4h":
                 df = df.resample('4h').agg({
-                    'open': 'first',
-                    'high': 'max',
-                    'low': 'min',
-                    'close': 'last',
-                    'volume': 'sum'
+                    'open': 'first', 'high': 'max', 'low': 'min', 'close': 'last', 'volume': 'sum'
+                }).dropna()
+            elif timeframe == "2h":
+                df = df.resample('2h').agg({
+                    'open': 'first', 'high': 'max', 'low': 'min', 'close': 'last', 'volume': 'sum'
                 }).dropna()
             
             # Slice to required limit

@@ -25,12 +25,13 @@ from modules.notifier import TelegramNotifier
 from strategy.v1_strategy import V1Strategy
 from strategy.v4_strategy import V4Strategy
 from strategy.v3_strategy import V3Strategy
+from strategy.v5_strategy import V5Strategy
 from modules.sync_engine import SyncEngine
 from modules.market_calendar import is_market_open
 from modules.sentiment_engine import SentimentEngine
 
 # TIMEFRAMES monitored by the bot
-TIMEFRAMES = ["15m", "1h", "4h", "1d"]
+TIMEFRAMES = ["15m", "1h", "2h", "4h", "1d"]
 
 def get_supabase_settings(supabase: Client):
     """Fetch active settings from Supabase command center."""
@@ -65,11 +66,12 @@ def main():
     # 2. Initialize components
     fetcher = DataFetcher()
     
-    # Strategy Factory (Now initialized inside main to pass fetcher to V4)
+    # Strategy Factory (Now initialized inside main to pass fetcher to V4/V5)
     strategies_map = {
         "v1": V1Strategy(),
         "v4": V4Strategy(fetcher=fetcher),
-        "v3": V3Strategy()
+        "v3": V3Strategy(),
+        "v5": V5Strategy(fetcher=fetcher)
     }
     
     news_filter = NewsFilter()
@@ -160,7 +162,9 @@ def main():
             if not news_filter.is_safe_to_trade():
                 logger.warning("News Filter active: Skipping scans.")
             else:
-                # Pre-fetch H1 and H4 once per cycle for V4 top-down alignment (avoids 8 redundant calls)
+                # Pre-fetch frames once per cycle for V4 and V5 Multi-Timeframe Alignment (avoids redundant calls)
+                df_1wk_cache = fetcher.fetch_ohlcv(symbol="XAU/USD", timeframe="1wk", limit=100)
+                df_1d_cache = fetcher.fetch_ohlcv(symbol="XAU/USD", timeframe="1d", limit=150)
                 df_h1_cache = fetcher.fetch_ohlcv(symbol="XAU/USD", timeframe="1h", limit=200)
                 df_h4_cache = fetcher.fetch_ohlcv(symbol="XAU/USD", timeframe="4h", limit=200)
 
@@ -191,10 +195,13 @@ def main():
                     
                     for strat_name, strategy in strategies_map.items():
                         logger.info(f"   Checking {strat_name}...")
-                        # Pass pre-fetched H1/H4 to V4 to avoid redundant HTTP calls
+                        # Pass pre-fetched H1/H4/D1/Weekly to avoid redundant HTTP calls
                         if strat_name == "v4":
                             signal = strategy.generate_signal(df, current_price=curr_p, params=sharpened_params,
                                                               df_h1=df_h1_cache, df_h4=df_h4_cache)
+                        elif strat_name == "v5":
+                            signal = strategy.generate_signal(df, current_price=curr_p, params=sharpened_params,
+                                                              df_1wk=df_1wk_cache, df_1d=df_1d_cache, df_4h=df_h4_cache)
                         else:
                             signal = strategy.generate_signal(df, current_price=curr_p, params=sharpened_params)
                         
