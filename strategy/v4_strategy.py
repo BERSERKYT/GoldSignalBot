@@ -18,15 +18,13 @@ class V4Strategy(BaseStrategy):
         super().__init__(name="V4_PRO_SMC")
         self.fetcher = fetcher
 
-    def generate_signal(self, df: pd.DataFrame, current_price: float = None, params: Dict[str, Any] = None) -> Optional[Dict[str, Any]]:
-        # This strategy is specifically optimized for M15 with H1/H4 confirmation
-        # If the dataframe passed is not M15, we might need to handle it, but main bot passes active_tf.
+    def generate_signal(self, df: pd.DataFrame, current_price: float = None, params: Dict[str, Any] = None,
+                         df_h1: pd.DataFrame = None, df_h4: pd.DataFrame = None) -> Optional[Dict[str, Any]]:
         if df is None or len(df) < 100:
             return None
 
-        # 1. TOP-DOWN ANALYSIS (H1 & H4)
-        # We need to fetch higher timeframe data if we don't have it
-        if not self._check_top_down_alignment():
+        # 1. TOP-DOWN ANALYSIS — uses pre-fetched frames if available, otherwise self-fetches
+        if not self._check_top_down_alignment(df_h1=df_h1, df_h4=df_h4):
             return None
 
         # 2. DETECT IMPULSE & OTE
@@ -73,37 +71,37 @@ class V4Strategy(BaseStrategy):
             "timestamp": df.index[-1]
         }
 
-    def _check_top_down_alignment(self) -> bool:
-        """Verifies EMA 50/200 alignment on H1 and H4."""
-        if not self.fetcher:
-            return True # Fallback if fetcher not provided (though it should be)
-            
+    def _check_top_down_alignment(self, df_h1: pd.DataFrame = None, df_h4: pd.DataFrame = None) -> bool:
+        """Verifies EMA 50/200 alignment on H1 and H4. Accepts pre-fetched frames to avoid extra HTTP calls."""
         try:
-            # Check H4
-            df_h4 = self.fetcher.fetch_ohlcv(symbol="XAU/USD", timeframe="4h", limit=200)
-            if df_h4 is not None and len(df_h4) >= 200:
-                from modules.indicators import Indicators
-                df_h4 = Indicators.add_all_indicators(df_h4)
-                last_h4 = df_h4.iloc[-1]
-                h4_bullish = last_h4['EMA_50'] > last_h4['EMA_200']
-                h4_bearish = last_h4['EMA_50'] < last_h4['EMA_200']
-            else:
-                return False
+            from modules.indicators import Indicators
 
-            # Check H1
-            df_h1 = self.fetcher.fetch_ohlcv(symbol="XAU/USD", timeframe="1h", limit=200)
-            if df_h1 is not None and len(df_h1) >= 200:
-                df_h1 = Indicators.add_all_indicators(df_h1)
-                last_h1 = df_h1.iloc[-1]
-                h1_bullish = last_h1['EMA_50'] > last_h1['EMA_200']
-                h1_bearish = last_h1['EMA_50'] < last_h1['EMA_200']
-            else:
+            # --- H4 ---
+            if df_h4 is None or len(df_h4) < 200:
+                if not self.fetcher:
+                    return True
+                df_h4 = self.fetcher.fetch_ohlcv(symbol="XAU/USD", timeframe="4h", limit=200)
+            if df_h4 is None or len(df_h4) < 200:
                 return False
+            df_h4 = Indicators.add_all_indicators(df_h4)
+            last_h4 = df_h4.iloc[-1]
+            h4_bullish = last_h4['EMA_50'] > last_h4['EMA_200']
+            h4_bearish = last_h4['EMA_50'] < last_h4['EMA_200']
 
-            # Must agree
+            # --- H1 ---
+            if df_h1 is None or len(df_h1) < 200:
+                if not self.fetcher:
+                    return True
+                df_h1 = self.fetcher.fetch_ohlcv(symbol="XAU/USD", timeframe="1h", limit=200)
+            if df_h1 is None or len(df_h1) < 200:
+                return False
+            df_h1 = Indicators.add_all_indicators(df_h1)
+            last_h1 = df_h1.iloc[-1]
+            h1_bullish = last_h1['EMA_50'] > last_h1['EMA_200']
+            h1_bearish = last_h1['EMA_50'] < last_h1['EMA_200']
+
             if h4_bullish and h1_bullish: return True
             if h4_bearish and h1_bearish: return True
-            
             return False
         except Exception as e:
             logger.error(f"Top-Down check failed: {e}")

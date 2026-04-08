@@ -42,8 +42,8 @@ class SyncEngine:
             else:
                 entry_time = entry_time.tz_convert('UTC')
 
-            # Fetch data from entry time to now (using 1m for maximum accuracy)
-            df = self.fetcher.fetch_ohlcv(symbol="XAU/USD", timeframe="1m", limit=3000) 
+            # Fetch 1h data (200 bars) — accurate enough for TP/SL detection, far less wasteful than 1m/3000
+            df = self.fetcher.fetch_ohlcv(symbol="XAU/USD", timeframe="1h", limit=200)
             if df is None or df.empty:
                 logger.warning(f"No data returned for outcome check (Signal {signal['id']})")
                 return

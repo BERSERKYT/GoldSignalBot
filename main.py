@@ -83,8 +83,16 @@ def main():
     # Initialize SyncEngine
     sync_engine = SyncEngine(supabase_client, fetcher, strategies_map, signal_logger)
     
-    # 🏁 HISTORICAL RECOVERY
-    sync_engine.backfill_gaps(start_date="2026-03-02")
+    # HISTORICAL RECOVERY — only runs once on first setup (when DB has < 5 signals)
+    try:
+        existing_count = supabase_client.table("signals").select("id", count="exact").execute()
+        if (existing_count.count or 0) < 5:
+            logger.info("First-time setup detected. Running historical backfill...")
+            sync_engine.backfill_gaps(start_date="2026-03-02")
+        else:
+            logger.info(f"Skipping backfill — {existing_count.count} signals already in DB.")
+    except Exception as e:
+        logger.warning(f"Could not check signal count for backfill gate: {e}")
     
     scan_interval_mins = int(os.getenv("SCAN_INTERVAL_MINS", "60"))
     logger.info(f"Bot successfully started. Universal Scan Mode Active.")
@@ -152,8 +160,12 @@ def main():
             if not news_filter.is_safe_to_trade():
                 logger.warning("News Filter active: Skipping scans.")
             else:
+                # Pre-fetch H1 and H4 once per cycle for V4 top-down alignment (avoids 8 redundant calls)
+                df_h1_cache = fetcher.fetch_ohlcv(symbol="XAU/USD", timeframe="1h", limit=200)
+                df_h4_cache = fetcher.fetch_ohlcv(symbol="XAU/USD", timeframe="4h", limit=200)
+
                 for tf in TIMEFRAMES:
-                    logger.info(f"🔍 Scanning Timeframe: {tf}")
+                    logger.info(f"Scanning Timeframe: {tf}")
                     df = fetcher.fetch_ohlcv(symbol="XAU/USD", timeframe=tf, limit=200)
                     
                     if df is None or df.empty:
@@ -163,20 +175,28 @@ def main():
                     df = Indicators.add_all_indicators(df)
                     curr_p = float(df.iloc[-1]['close'])
 
-                    # 🧠 TF-SPECIFIC AI LEARNING
+                    # TF-SPECIFIC AI LEARNING
                     ai_adaptation = learning_engine.apply_learning({}, timeframe=tf)
                     sharpened_params = ai_adaptation["params"]
                     
                     # Update Cloud Status
                     if supabase_client:
-                        supabase_client.table("settings").update({
-                            "ai_status": ai_adaptation["status"],
-                            "ai_lessons": ai_adaptation["insight"]
-                        }).eq("id", 1).execute()
+                        try:
+                            supabase_client.table("settings").update({
+                                "ai_status": ai_adaptation["status"],
+                                "ai_lessons": ai_adaptation["insight"]
+                            }).eq("id", 1).execute()
+                        except Exception as e:
+                            logger.warning(f"Could not update AI status in Supabase: {e}")
                     
                     for strat_name, strategy in strategies_map.items():
-                        logger.info(f"   ∟ Checking {strat_name}...")
-                        signal = strategy.generate_signal(df, current_price=curr_p, params=sharpened_params)
+                        logger.info(f"   Checking {strat_name}...")
+                        # Pass pre-fetched H1/H4 to V4 to avoid redundant HTTP calls
+                        if strat_name == "v4":
+                            signal = strategy.generate_signal(df, current_price=curr_p, params=sharpened_params,
+                                                              df_h1=df_h1_cache, df_h4=df_h4_cache)
+                        else:
+                            signal = strategy.generate_signal(df, current_price=curr_p, params=sharpened_params)
                         
                         if signal:
                             # 🛡️ 3. HIGH CONFIDENCE FILTER + SENTIMENT BIAS

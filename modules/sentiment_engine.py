@@ -82,10 +82,10 @@ class SentimentEngine:
             score = round(score, 2)
             
             label = "NEUTRAL"
-            if score > 0.2: label = "BULLISH"
-            elif score > 0.6: label = "STRONG BULLISH"
-            elif score < -0.2: label = "BEARISH"
+            if score > 0.6: label = "STRONG BULLISH"
+            elif score > 0.2: label = "BULLISH"
             elif score < -0.6: label = "STRONG BEARISH"
+            elif score < -0.2: label = "BEARISH"
 
             logger.info(f"🧠 Sentiment Analysis: {label} (Score: {score}) | Bullish: {bullish_hits}, Bearish: {bearish_hits}")
             
