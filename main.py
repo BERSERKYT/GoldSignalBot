@@ -106,10 +106,13 @@ def main():
             smart_lots_enabled = False
             risk_percentage = 1.0
             if db_settings:
-                trading_enabled = db_settings.get("trading_enabled", False)
-                smart_lots_enabled = db_settings.get("smart_lots_enabled", False)
-                risk_percentage = float(db_settings.get("risk_percentage", 1.0))
-                logger.info(f"🔄 SYNC: Cloud Settings | Trading: {trading_enabled} | Smart Lots: {smart_lots_enabled} ({risk_percentage}% risk)")
+                try:
+                    trading_enabled = db_settings.get("trading_enabled", False) or False
+                    smart_lots_enabled = db_settings.get("smart_lots_enabled", False) or False
+                    risk_percentage = float(db_settings.get("risk_percentage") or 1.0)
+                    logger.info(f"SYNC: Cloud Settings | Trading: {trading_enabled} | Smart Lots: {smart_lots_enabled} ({risk_percentage}% risk)")
+                except Exception as e:
+                    logger.warning(f"Supabase settings parse error (using defaults): {e}")
 
             # 0.5 Update Outcomes for PENDING signals
             sync_engine.analyze_outcomes()
